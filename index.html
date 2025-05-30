@@ -148,9 +148,9 @@
                 sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
-            embedsu: {
-                name: 'EmbedSU',
-                url: (id) => `https://embed.su/embed/movie/${id}`,
+            multiembed: {
+                name: 'MultiEmbed',
+                url: (id) => `https://multiembed.mov/directstream.php?video_id=${id}`,
                 sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
@@ -160,9 +160,9 @@
                 sandbox: null,
                 referrerPolicy: null
             },
-            multiembed: {
-                name: 'MultiEmbed',
-                url: (id) => `https://multiembed.mov/directstream.php?video_id=${id}`,
+            embedsu: {
+                name: 'EmbedSU',
+                url: (id) => `https://embed.su/embed/movie/${id}`,
                 sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
