@@ -165,7 +165,13 @@
                 url: (id) => `https://multiembed.mov/directstream.php?video_id=${id}`,
                 sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
-            }
+            },
+            godrive: {
+                name: 'Godrive',
+                url: (id) => `https://godriveplayer.com/player.php?imdb=${id}`,
+                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
+                referrerPolicy: 'no-referrer'
+            },
         };
 
         // Create main container structure
