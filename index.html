@@ -142,15 +142,15 @@
     <script>
         // Streaming providers configuration
         const STREAMING_PROVIDERS = {
-            embedsu: {
-                name: 'EmbedSU',
-                url: (id) => `https://embed.su/embed/movie/${id}`,
-                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
-                referrerPolicy: 'no-referrer'
-            },
             vidsrc: {
                 name: 'VidSrc',
                 url: (id) => `https://vidsrc.net/embed/movie/${id}`,
+                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
+                referrerPolicy: 'no-referrer'
+            },
+            embedsu: {
+                name: 'EmbedSU',
+                url: (id) => `https://embed.su/embed/movie/${id}`,
                 sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
@@ -302,7 +302,7 @@
                     };
                 });
                 
-                showStream('embedsu');
+                showStream('vidsrc');
             }
         }
 
