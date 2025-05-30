@@ -166,6 +166,12 @@
                 sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
+            autoembed: {
+                name: 'AutoEmbed',
+                url: (id) => `https://player.autoembed.cc/embed/movie/${id}`,
+                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
+                referrerPolicy: 'no-referrer'
+            },
             godrive: {
                 name: 'Godrive',
                 url: (id) => `https://godriveplayer.com/player.php?imdb=${id}`,
