@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Stream your favorite movies and TV shows">
+    <meta name="theme-color" content="#0f0f0f">
+    <title>Stream Player</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><path d='M5 3l14 9-14 9V3z'/></svg>">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #0f0f0f;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .stream-section {
+            flex: 1;
+            background: #1a1a1a;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .stream-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+        }
+        .stream-button {
+            padding: 0.8rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+        .stream-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        .stream-button.active {
+            background-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+        }
+        .stream-container {
+            flex: 1;
+            width: 100%;
+            background-color: #000;
+            display: none;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        .stream-container.active {
+            display: block;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .error-message {
+            text-align: center;
+            color: #ef4444;
+            padding: 1.5rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 1rem;
+            margin: 1.5rem auto;
+            max-width: 600px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .loading-spinner {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 2rem auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .stream-container.loading .loading-spinner {
+            display: block;
+        }
+        .stream-container.loading iframe {
+            display: none;
+        }
+        .no-streams-message {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            margin: 2rem auto;
+            max-width: 600px;
+        }
+        .stream-button:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        .stream-container:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        @media (max-width: 768px) {
+            .stream-section {
+                padding: 1rem;
+            }
+            .stream-buttons {
+                padding: 0.5rem;
+            }
+            .stream-button {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Streaming providers configuration
+        const STREAMING_PROVIDERS = {
+            embedsu: {
+                name: 'EmbedSU',
+                url: (id) => `https://embed.su/embed/movie/${id}`,
+                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
+                referrerPolicy: 'no-referrer'
+            },
+            vidsrc: {
+                name: 'VidSrc',
+                url: (id) => `https://vidsrc.net/embed/movie/${id}`,
+                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
+                referrerPolicy: 'no-referrer'
+            },
+            embed2: {
+                name: '2Embed',
+                url: (id) => `https://www.2embed.cc/embed/${id}`,
+                sandbox: null,
+                referrerPolicy: null
+            },
+            multiembed: {
+                name: 'MultiEmbed',
+                url: (id) => `https://multiembed.mov/directstream.php?video_id=${id}`,
+                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
+                referrerPolicy: 'no-referrer'
+            }
+        };
+
+        // Create main container structure
+        function createAppStructure() {
+            const container = document.createElement('div');
+            container.className = 'container';
+
+            const streamSection = document.createElement('div');
+            streamSection.className = 'stream-section';
+            streamSection.id = 'streamSection';
+
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'stream-buttons';
+            buttonsContainer.setAttribute('role', 'tablist');
+
+            streamSection.appendChild(buttonsContainer);
+            container.appendChild(streamSection);
+            document.body.appendChild(container);
+
+            return { streamSection, buttonsContainer };
+        }
+
+        // Generate stream buttons and containers based on providers
+        function generateStreamElements(streamSection, buttonsContainer) {
+            // Generate buttons and containers for each provider
+            Object.entries(STREAMING_PROVIDERS).forEach(([id, provider], index) => {
+                // Create button
+                const button = document.createElement('button');
+                button.className = 'stream-button';
+                button.id = `btn-${id}`;
+                button.setAttribute('role', 'tab');
+                button.setAttribute('aria-selected', index === 0);
+                button.setAttribute('aria-controls', id);
+                button.onclick = () => showStream(id);
+                
+                button.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M5 3l14 9-14 9V3z"/>
+                    </svg>
+                    ${provider.name}
+                `;
+                
+                buttonsContainer.appendChild(button);
+                
+                // Create container
+                const container = document.createElement('div');
+                container.id = id;
+                container.className = 'stream-container';
+                container.setAttribute('role', 'tabpanel');
+                container.setAttribute('aria-labelledby', `btn-${id}`);
+                container.setAttribute('aria-hidden', index !== 0);
+                
+                container.innerHTML = `
+                    <div class="loading-spinner"></div>
+                    <iframe 
+                        src="" 
+                        frameborder="0" 
+                        scrolling="no" 
+                        allowfullscreen 
+                        title="${provider.name} Stream"
+                        ${provider.sandbox ? `sandbox="${provider.sandbox}"` : ''}
+                        ${provider.referrerPolicy ? `referrerpolicy="${provider.referrerPolicy}"` : ''}
+                    ></iframe>
+                `;
+                
+                streamSection.appendChild(container);
+            });
+        }
+
+        function showStream(streamId) {
+            document.querySelectorAll('.stream-container').forEach(container => {
+                container.classList.remove('active');
+                container.setAttribute('aria-hidden', 'true');
+                const iframe = container.querySelector('iframe');
+                if (iframe) {
+                    iframe.src = iframe.src;
+                }
+            });
+            
+            document.querySelectorAll('.stream-button').forEach(button => {
+                button.classList.remove('active');
+                button.setAttribute('aria-selected', 'false');
+            });
+            
+            const selectedContainer = document.getElementById(streamId);
+            const selectedButton = document.getElementById(`btn-${streamId}`);
+            
+            selectedContainer.classList.add('active');
+            selectedContainer.setAttribute('aria-hidden', 'false');
+            selectedButton.classList.add('active');
+            selectedButton.setAttribute('aria-selected', 'true');
+        }
+
+        // Initialize the app
+        function initApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const imdbId = urlParams.get('id');
+
+            if (imdbId) {
+                const { streamSection, buttonsContainer } = createAppStructure();
+                generateStreamElements(streamSection, buttonsContainer);
+                
+                // Set up streams
+                Object.entries(STREAMING_PROVIDERS).forEach(([id, provider]) => {
+                    const container = document.getElementById(id);
+                    const iframe = container.querySelector('iframe');
+                    
+                    iframe.src = provider.url(imdbId);
+                    container.classList.add('loading');
+
+                    iframe.onload = () => {
+                        container.classList.remove('loading');
+                    };
+
+                    iframe.onerror = () => {
+                        container.classList.remove('loading');
+                        container.innerHTML = `
+                            <div class="error-message">
+                                Failed to load stream. Please try another source.
+                            </div>
+                        `;
+                    };
+                });
+                
+                showStream('embedsu');
+            }
+        }
+
+        // Start the app
+        initApp();
+    </script>
+</body>
+</html> 
