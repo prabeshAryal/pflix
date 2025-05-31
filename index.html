@@ -248,7 +248,8 @@
                 container.setAttribute('aria-hidden', 'true');
                 const iframe = container.querySelector('iframe');
                 if (iframe) {
-                    iframe.src = iframe.src;
+                    // Clear the iframe src to stop any playing content
+                    iframe.src = 'about:blank';
                 }
             });
             
@@ -264,6 +265,14 @@
             selectedContainer.setAttribute('aria-hidden', 'false');
             selectedButton.classList.add('active');
             selectedButton.setAttribute('aria-selected', 'true');
+
+            // Set the new iframe source after a small delay
+            const iframe = selectedContainer.querySelector('iframe');
+            if (iframe) {
+                setTimeout(() => {
+                    iframe.src = STREAMING_PROVIDERS[streamId].url(new URLSearchParams(window.location.search).get('id'));
+                }, 100);
+            }
         }
 
         // Initialize the app
