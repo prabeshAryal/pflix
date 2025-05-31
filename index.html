@@ -145,31 +145,26 @@
             vidsrc: {
                 name: 'VidSrc',
                 url: (id) => `https://vidsrc.net/embed/movie/${id}`,
-                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
             multiembed: {
                 name: 'MultiEmbed',
                 url: (id) => `https://multiembed.mov/directstream.php?video_id=${id}`,
-                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
             embed2: {
                 name: '2Embed',
                 url: (id) => `https://www.2embed.cc/embed/${id}`,
-                sandbox: null,
                 referrerPolicy: null
             },
             embedsu: {
                 name: 'EmbedSU',
                 url: (id) => `https://embed.su/embed/movie/${id}`,
-                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
             autoembed: {
                 name: 'AutoEmbed',
                 url: (id) => `https://player.autoembed.cc/embed/movie/${id}`,
-                sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms',
                 referrerPolicy: 'no-referrer'
             },
         };
@@ -232,7 +227,6 @@
                         scrolling="no" 
                         allowfullscreen 
                         title="${provider.name} Stream"
-                        ${provider.sandbox ? `sandbox="${provider.sandbox}"` : ''}
                         ${provider.referrerPolicy ? `referrerpolicy="${provider.referrerPolicy}"` : ''}
                     ></iframe>
                 `;
