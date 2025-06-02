@@ -150,27 +150,27 @@
         // Streaming providers configuration
         const STREAMING_PROVIDERS = {
             vidsrc: {
-                name: 'VidSrc',
+                name: 'S1',
                 url: (id) => `https://vidsrc.net/embed/movie/${id}`,
                 referrerPolicy: 'no-referrer'
             },
             multiembed: {
-                name: 'MultiEmbed',
+                name: 'S2',
                 url: (id) => `https://multiembed.mov/directstream.php?video_id=${id}`,
                 referrerPolicy: 'no-referrer'
             },
             embed2: {
-                name: '2Embed',
+                name: 'S3',
                 url: (id) => `https://www.2embed.cc/embed/${id}`,
                 referrerPolicy: null
             },
             embedsu: {
-                name: 'EmbedSU',
+                name: 'S4',
                 url: (id) => `https://embed.su/embed/movie/${id}`,
                 referrerPolicy: 'no-referrer'
             },
             autoembed: {
-                name: 'AutoEmbed',
+                name: 'S5',
                 url: (id) => `https://player.autoembed.cc/embed/movie/${id}`,
                 referrerPolicy: 'no-referrer'
             },
