@@ -39,6 +39,12 @@ async function fetchMediaDetails() {
  * Renders the skeleton loading state.
  */
 function renderSkeleton() {
+    const serverCount = Object.keys(STREAMING_PROVIDERS).length;
+    let serverSkeletons = '';
+    for (let i = 0; i < serverCount; i++) {
+        serverSkeletons += '<div class="skeleton" style="height: 40px; border-radius: 0.75rem;"></div>';
+    }
+
     App.elements.root.innerHTML = `
         <div class="container">
             <div class="top-section">
@@ -46,11 +52,7 @@ function renderSkeleton() {
                 <aside class="sidebar">
                     <h2>Servers</h2>
                     <div class="stream-buttons">
-                        <div class="skeleton" style="height: 40px; border-radius: 0.75rem;"></div>
-                        <div class="skeleton" style="height: 40px; border-radius: 0.75rem;"></div>
-                        <div class="skeleton" style="height: 40px; border-radius: 0.75rem;"></div>
-                        <div class="skeleton" style="height: 40px; border-radius: 0.75rem;"></div>
-                        <div class="skeleton" style="height: 40px; border-radius: 0.75rem;"></div>
+                        ${serverSkeletons}
                     </div>
                 </aside>
             </div>
@@ -58,11 +60,17 @@ function renderSkeleton() {
                 <div class="info-section">
                     <div class="poster skeleton"></div>
                     <div class="details" style="flex: 1;">
-                        <div class="skeleton skeleton-text" style="width: 80%; height: 2.5rem;"></div>
-                        <div class="skeleton skeleton-text" style="width: 60%; height: 1rem;"></div>
-                        <div class="skeleton skeleton-text" style="width: 100%; margin-top: 1.5rem;"></div>
+                        <div class="skeleton skeleton-text" style="width: 80%; height: 2.5rem; margin-bottom: 0.5rem;"></div>
+                        <div class="skeleton skeleton-text" style="width: 60%; height: 1rem; margin-bottom: 1rem;"></div>
+                        <div class="skeleton skeleton-text" style="width: 100%;"></div>
                         <div class="skeleton skeleton-text" style="width: 100%;"></div>
                         <div class="skeleton skeleton-text" style="width: 40%;"></div>
+                        <div style="display: flex; gap: 1.5rem; margin: 1.5rem 0;">
+                            <div class="skeleton" style="width: 80px; height: 40px; border-radius: 0.5rem;"></div>
+                            <div class="skeleton" style="width: 80px; height: 40px; border-radius: 0.5rem;"></div>
+                        </div>
+                        <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                        <div class="skeleton skeleton-text" style="width: 90%;"></div>
                     </div>
                 </div>
             </div>
