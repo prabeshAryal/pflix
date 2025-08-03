@@ -146,61 +146,8 @@
     </style>
 </head>
 <body>
+    <script src="providers.js"></script>
     <script>
-        // Streaming providers configuration
-        const STREAMING_PROVIDERS = {
-            vidsrc: {
-                name: 'S1',
-                url: (id) => `https://vidsrc.net/embed/movie/${id}`,
-                referrerPolicy: 'no-referrer'
-            },
-            multiembed: {
-                name: 'S2',
-                url: (id) => `https://multiembed.mov/directstream.php?video_id=${id}`,
-                referrerPolicy: 'no-referrer'
-            },
-            embed2: {
-                name: 'S3',
-                url: (id) => `https://www.2embed.cc/embed/${id}`,
-                referrerPolicy: null
-            },
-            embedsu: {
-                name: 'S4',
-                url: (id) => `https://embed.su/embed/movie/${id}`,
-                referrerPolicy: 'no-referrer'
-            },
-            autoembed: {
-                name: 'S5',
-                url: (id) => `https://player.autoembed.cc/embed/movie/${id}`,
-                referrerPolicy: 'no-referrer'
-            },
-            soap2day: {
-                name: 'S6',
-                url: (id) => `https://soap2dayto.win/embed/movie/${id}`,
-                referrerPolicy: 'no-referrer'
-            },
-            vidsrccc: {
-                name: 'S7',
-                url: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
-                referrerPolicy: 'no-referrer'
-            },
-            vidlink: {
-                name: 'S8',
-                url: (id) => `https://vidlink.pro/movie/${id}`,
-                referrerPolicy: 'no-referrer'
-            },
-            vidfast: {
-                name: 'S9',
-                url: (id) => `https://vidfast.pro/movie/${id}`,
-                referrerPolicy: 'no-referrer'
-          },
-            videasy: {
-                name: 'S10',
-                url: (id) => `https://player.videasy.net/movie/${id}`,
-                referrerPolicy: 'no-referrer'
-            },
-        };
-
         // Create main container structure
         function createAppStructure() {
             const container = document.createElement('div');
@@ -230,7 +177,7 @@
                 button.className = 'stream-button';
                 button.id = `btn-${id}`;
                 button.setAttribute('role', 'tab');
-                button.setAttribute('aria-selected', index === 0);
+                button.setAttribute('aria-selected', 'false'); // Default to false
                 button.setAttribute('aria-controls', id);
                 button.onclick = () => showStream(id);
                 
@@ -249,12 +196,12 @@
                 container.className = 'stream-container';
                 container.setAttribute('role', 'tabpanel');
                 container.setAttribute('aria-labelledby', `btn-${id}`);
-                container.setAttribute('aria-hidden', index !== 0);
+                container.setAttribute('aria-hidden', 'true'); // Default to hidden
                 
                 container.innerHTML = `
                     <div class="loading-spinner"></div>
                     <iframe 
-                        src="" 
+                        src="about:blank" 
                         frameborder="0" 
                         scrolling="no" 
                         allowfullscreen 
@@ -268,14 +215,18 @@
         }
 
         function showStream(streamId) {
+            const imdbId = new URLSearchParams(window.location.search).get('id');
+            if (!imdbId) return;
+
             document.querySelectorAll('.stream-container').forEach(container => {
+                if (container.id !== streamId && container.classList.contains('active')) {
+                    const iframe = container.querySelector('iframe');
+                    if (iframe) {
+                        iframe.src = 'about:blank'; // Stop playback only on the one that was active
+                    }
+                }
                 container.classList.remove('active');
                 container.setAttribute('aria-hidden', 'true');
-                const iframe = container.querySelector('iframe');
-                if (iframe) {
-                    // Clear the iframe src to stop any playing content
-                    iframe.src = 'about:blank';
-                }
             });
             
             document.querySelectorAll('.stream-button').forEach(button => {
@@ -291,12 +242,18 @@
             selectedButton.classList.add('active');
             selectedButton.setAttribute('aria-selected', 'true');
 
-            // Set the new iframe source after a small delay
             const iframe = selectedContainer.querySelector('iframe');
-            if (iframe) {
-                setTimeout(() => {
-                    iframe.src = STREAMING_PROVIDERS[streamId].url(new URLSearchParams(window.location.search).get('id'));
-                }, 100);
+            const desiredSrc = STREAMING_PROVIDERS[streamId].url(imdbId);
+
+            // Load iframe content only if it's not already the correct source
+            if (iframe && iframe.src !== desiredSrc) {
+                selectedContainer.classList.add('loading');
+                iframe.onload = () => selectedContainer.classList.remove('loading');
+                iframe.onerror = () => {
+                    selectedContainer.classList.remove('loading');
+                    selectedContainer.innerHTML = `<div class="error-message">Failed to load stream. Please try another source.</div>`;
+                };
+                iframe.src = desiredSrc;
             }
         }
 
@@ -309,29 +266,11 @@
                 const { streamSection, buttonsContainer } = createAppStructure();
                 generateStreamElements(streamSection, buttonsContainer);
                 
-                // Set up streams
-                Object.entries(STREAMING_PROVIDERS).forEach(([id, provider]) => {
-                    const container = document.getElementById(id);
-                    const iframe = container.querySelector('iframe');
-                    
-                    iframe.src = provider.url(imdbId);
-                    container.classList.add('loading');
-
-                    iframe.onload = () => {
-                        container.classList.remove('loading');
-                    };
-
-                    iframe.onerror = () => {
-                        container.classList.remove('loading');
-                        container.innerHTML = `
-                            <div class="error-message">
-                                Failed to load stream. Please try another source.
-                            </div>
-                        `;
-                    };
-                });
-                
-                showStream('vidsrc');
+                // Show the first stream by default
+                const firstStreamId = Object.keys(STREAMING_PROVIDERS)[0];
+                if (firstStreamId) {
+                    showStream(firstStreamId);
+                }
             }
         }
 
