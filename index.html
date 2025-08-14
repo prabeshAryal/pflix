@@ -37,24 +37,24 @@
     <!-- Navbar removed. Donation, AdBlock, and About below search bar on homepage -->
     <main id="main-content" class="flex-1 flex flex-col items-center justify-center w-full transition-all duration-500">
             <!-- Central search -->
-            <section id="search-section" class="w-full flex flex-col items-center justify-center gap-8 py-12">
-                <div class="w-full max-w-xl flex flex-col items-center gap-4">
-                    <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-center">Find where to stream any movie or show</h2>
-                    <form id="main-search-form" class="w-full flex gap-2 justify-center">
-                        <input id="search-input" type="text" placeholder="Search movies, shows..." class="w-full bg-gray-800 text-white rounded-full py-4 px-6 text-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all" />
-                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-4 rounded-full text-lg transition-all">Search</button>
-                        <button type="button" id="explore-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-6 py-4 rounded-full text-lg transition-all">Explore</button>
+            <section id="search-section" class="w-full flex flex-col items-center justify-center gap-8 py-8 sm:py-12 px-2 sm:px-0">
+                <div class="w-full max-w-xl flex flex-col items-center gap-4 px-2 sm:px-0">
+                    <h2 class="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-center">Find where to stream any movie or show</h2>
+                    <form id="main-search-form" class="w-full flex flex-col sm:flex-row gap-2 justify-center">
+                        <input id="search-input" type="text" placeholder="Search movies, shows..." class="w-full bg-gray-800 text-white rounded-full py-3 sm:py-4 px-4 sm:px-6 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all" />
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-full text-base sm:text-lg transition-all">Search</button>
+                        <button type="button" id="explore-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-full text-base sm:text-lg transition-all">Explore</button>
                     </form>
                     <!-- Donation, AdBlock, About below search -->
                     <div class="flex flex-col items-center gap-2 mt-6 w-full">
-                        <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-full shadow transition-all">
+                        <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 sm:px-4 py-2 rounded-full shadow transition-all text-xs sm:text-base">
                             <span>Donate me so my site keeps running</span>
-                            <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-6 w-auto" />
+                            <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-5 sm:h-6 w-auto" />
                         </a>
                         <div class="flex items-center gap-2 mt-2">
-                            <span class="text-gray-400 text-sm">Use <a href="https://getadblock.com/en/" target="_blank" class="text-blue-400 underline">AdBlock</a> for best experience</span>
+                            <span class="text-gray-400 text-xs sm:text-sm">Use <a href="https://getadblock.com/en/" target="_blank" class="text-blue-400 underline">AdBlock</a> for best experience</span>
                         </div>
-                        <button id="about-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-full text-lg transition-all mt-2">About Us</button>
+                        <button id="about-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-3 sm:px-4 py-2 rounded-full text-xs sm:text-lg transition-all mt-2">About Us</button>
                     </div>
                 </div>
             </section>
@@ -65,7 +65,7 @@
                     <h3 class="text-3xl font-bold text-center">Featured</h3>
                 </div>
                 <div id="explore-spinner" class="w-full flex justify-center py-8"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>
-                <div id="featured-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 justify-items-center">
+                <div id="featured-grid" class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-8 justify-items-center">
                     <!-- Cards will be rendered by JS, portrait, two-line titles -->
                 </div>
             </section>
@@ -76,19 +76,19 @@
                     <h3 class="text-3xl font-bold text-center">Search Results</h3>
                 </div>
                 <div id="results-spinner" class="w-full flex justify-center py-8"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>
-                <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 justify-items-center">
+                <div id="search-results" class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-8 justify-items-center">
                     <!-- Cards will be rendered by JS, portrait, two-line titles -->
                 </div>
             </section>
 
             <!-- Details / Player container -->
             <section id="details-section" class="w-full h-full hidden transition-all duration-500 flex flex-col overflow-hidden">
-                <div id="watch-page-container"></div>
+                <div id="watch-page-container" class="w-full h-full overflow-auto"></div>
             </section>
 
             <!-- About/Privacy modal/page -->
             <section id="about-section" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden transition-all duration-500">
-                <div class="bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative">
+                <div class="bg-gray-900 rounded-2xl shadow-2xl p-4 sm:p-8 max-w-2xl w-full relative overflow-y-auto max-h-screen">
                     <button id="about-close" class="absolute top-4 right-4 text-gray-400 hover:text-red-400 text-2xl">&times;</button>
                     <div class="flex flex-col items-center gap-4">
                         <h2 class="text-3xl font-bold mb-2">About & Privacy</h2>

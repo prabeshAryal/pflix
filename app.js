@@ -109,7 +109,7 @@ function renderSearchResults(titles) {
     }
     titles.forEach(title => {
         const item = document.createElement('div');
-        item.className = 'bg-gray-800/90 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col w-48 h-80';
+        item.className = 'bg-gray-800/90 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col w-full max-w-xs sm:w-48 sm:h-80 h-64';
         item.addEventListener('click', () => navigateTo(title.id));
 
         const imageUrl = title.primaryImage?.url || 'https://via.placeholder.com/300x450.png?text=No+Image';
@@ -118,9 +118,9 @@ function renderSearchResults(titles) {
             : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
 
         item.innerHTML = `
-            <div class="h-64 w-full bg-gray-700 overflow-hidden">${imageUrl ? `<img src="${imageUrl}" alt="${title.primaryTitle}" class="w-full h-full object-cover" />` : ''}</div>
-            <div class="p-3 flex flex-col justify-between flex-1"> 
-                <div class="font-semibold text-sm leading-tight flex items-start">${typeIcon}<span class="line-clamp-2">${title.primaryTitle}</span></div>
+            <div class="h-40 sm:h-64 w-full bg-gray-700 overflow-hidden">${imageUrl ? `<img src="${imageUrl}" alt="${title.primaryTitle}" class="w-full h-full object-cover" />` : ''}</div>
+            <div class="p-2 sm:p-3 flex flex-col justify-between flex-1"> 
+                <div class="font-semibold text-xs sm:text-sm leading-tight flex items-start">${typeIcon}<span class="line-clamp-2">${title.primaryTitle}</span></div>
                 <div class="text-xs text-gray-400 mt-2">${title.startYear || ''}</div>
             </div>`;
         App.elements.searchResults.appendChild(item);
@@ -282,23 +282,23 @@ function renderDetailsPage(data) {
         </div>` : '';
 
     App.elements.watchPageContainer.innerHTML = `
-        <div class="fixed inset-0 w-full h-full overflow-hidden">
+        <div class="fixed inset-0 w-full h-full overflow-auto">
             <div class="absolute inset-0 bg-cover bg-center scale-110" style="background-image: url(${data.primaryImage?.url || ''})"></div>
             <div class="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
-            <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 p-8 min-h-screen w-full">
-                <img src="${data.primaryImage?.url || ''}" alt="Poster" class="w-64 md:w-80 rounded-lg shadow-2xl">
-                <div class="max-w-2xl text-center md:text-left">
-                    <h1 class="text-4xl md:text-6xl font-bold text-white">${data.primaryTitle}</h1>
-                    <div class="flex items-center justify-center md:justify-start gap-4 my-4 text-gray-300">
+            <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-8 md:gap-12 p-4 sm:p-8 min-h-screen w-full">
+                <img src="${data.primaryImage?.url || ''}" alt="Poster" class="w-40 sm:w-64 md:w-80 rounded-lg shadow-2xl">
+                <div class="max-w-2xl w-full text-center md:text-left">
+                    <h1 class="text-2xl sm:text-4xl md:text-6xl font-bold text-white">${data.primaryTitle}</h1>
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-4 my-2 sm:my-4 text-gray-300">
                         <span>${data.startYear}</span>${data.endYear ? `<span>- ${data.endYear}</span>` : ''}
                         ${data.runtimeSeconds ? `<span>• ${Math.floor(data.runtimeSeconds / 60)}m</span>` : ''}
                         <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-md capitalize">${data.type}</span>
                     </div>
-                    <p class="my-4 text-gray-200 leading-relaxed">${data.plot || 'No plot available.'}</p>
-                    <div class="flex justify-center md:justify-start items-center gap-6 my-4">
+                    <p class="my-2 sm:my-4 text-gray-200 leading-relaxed">${data.plot || 'No plot available.'}</p>
+                    <div class="flex flex-wrap justify-center md:justify-start items-center gap-4 sm:gap-6 my-2 sm:my-4">
                         ${ratingsHTML}
                     </div>
-                    <button id="play-button" class="mt-4 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform hover:scale-105">
+                    <button id="play-button" class="mt-4 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-8 rounded-full text-base sm:text-lg transition-transform hover:scale-105 w-full sm:w-auto">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         Play
                     </button>
@@ -325,26 +325,26 @@ function renderPlayerPage(data) {
     document.title = `${data.primaryTitle} - Now Playing - Pflix`;
     
     App.elements.watchPageContainer.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 h-full">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-8 h-full overflow-auto">
             <div class="lg:col-span-3 flex flex-col h-full">
                 <div id="stream-player-section" class="w-full bg-black rounded-lg overflow-hidden relative aspect-video shadow-2xl">
                     <!-- Player iframe will be loaded here -->
                 </div>
                 <div class="flex flex-col items-center gap-2 mt-4">
-                    <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-full shadow transition-all">
+                    <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 sm:px-4 py-2 rounded-full shadow transition-all text-xs sm:text-base">
                         <span>Donate me so my site keeps running</span>
-                        <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-6 w-auto" />
+                        <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-5 sm:h-6 w-auto" />
                     </a>
-                    <a href="https://getadblock.com/en/" target="_blank" class="flex items-center gap-2 mt-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 hover:bg-white/20 transition-all">
-                        <img src="https://getadblock.com/images/updateAssets/core_logo_full.svg" alt="AdBlock" class="h-6 w-6" />
-                        <span class="text-gray-200 text-sm font-medium">AdBlock can fix most issues with popups/ads</span>
+                    <a href="https://getadblock.com/en/" target="_blank" class="flex items-center gap-2 mt-2 bg-white/10 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1 sm:py-2 hover:bg-white/20 transition-all">
+                        <img src="https://getadblock.com/images/updateAssets/core_logo_full.svg" alt="AdBlock" class="h-5 sm:h-6 w-5 sm:w-6" />
+                        <span class="text-gray-200 text-xs sm:text-sm font-medium">AdBlock can fix most issues with popups/ads</span>
                     </a>
                 </div>
             </div>
-            <aside class="lg:col-span-1 bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col gap-4">
+            <aside class="lg:col-span-1 bg-gray-800 p-2 sm:p-4 rounded-lg shadow-lg flex flex-col gap-2 sm:gap-4">
                 <div id="episode-selector-container"></div>
-                <h2 class="text-xl font-bold mb-4">Servers</h2>
-                <div id="stream-buttons" class="flex flex-col gap-2"></div>
+                <h2 class="text-base sm:text-xl font-bold mb-2 sm:mb-4">Servers</h2>
+                <div id="stream-buttons" class="flex flex-col gap-1 sm:gap-2"></div>
             </aside>
         </div>`;
     // Remove redundant home button listener - using global home button instead
