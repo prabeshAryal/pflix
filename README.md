@@ -1,12 +1,4 @@
----
 
-## 🔗 More by Prabesh Aryal
-
-- [Main Site: prabe.sh](https://prabe.sh)
-
----
-
-© 2025 Prabesh Aryal. All rights reserved.
 
 # 🎬 Pflix (pflix.prabe.sh)
 
