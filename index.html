@@ -12,7 +12,7 @@
     <meta property="og:type" content="website">
     <link rel="canonical" href="https://pflix.prabe.sh/" />
     <meta property="og:url" content="https://pflix.prabe.sh/">
-    <meta property="og:image" content="https://pflix.prabe.sh/og-image.png">
+    <meta property="og:image" content="https://pflix.prabe.sh/assets/images/pflix.png">
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:title" content="Pflix - Find where to stream any movie or TV show">
     <meta property="twitter:description" content="Search thousands of movies and TV shows to find where they're available to stream.">
@@ -28,14 +28,14 @@
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 w-full h-full m-0 p-0">
-    <div id="app-root">
+    <div id="app-root" class="min-h-screen flex flex-col">
     <!-- Global Home Button: fixed position, only visible when not on homepage or player preview -->
     <button id="global-home-btn" class="hidden fixed top-6 right-6 z-50 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-full text-lg shadow-lg transition-all flex items-center gap-2">
         <img src="assets/images/home.svg" alt="Home" class="h-6 w-6" />
         Home
     </button>
     <!-- Navbar removed. Donation, AdBlock, and About below search bar on homepage -->
-    <main id="main-content" class="flex flex-col items-center justify-center w-full h-full min-h-screen transition-all duration-500">
+    <main id="main-content" class="flex-1 flex flex-col items-center justify-center w-full transition-all duration-500">
             <!-- Central search -->
             <section id="search-section" class="w-full flex flex-col items-center justify-center gap-8 py-12">
                 <div class="w-full max-w-xl flex flex-col items-center gap-4">
@@ -100,6 +100,11 @@
                 </div>
             </section>
         </main>
+
+    <!-- Footer -->
+    <footer class="text-center mt-16 pb-8">
+        <a href="https://prabe.sh" class="text-sm themed-text opacity-60" target="_blank" rel="noopener">© 2025 prabe.sh</a>
+    </footer>
     </div>
 
     <script src="providers.js"></script>
