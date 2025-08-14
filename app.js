@@ -56,7 +56,7 @@ const App = {
  * Performs a search query to the API.
  */
 async function search(query) {
-    if (query.length < 3) {
+    if (query.length < 1) {
         showHomeView();
         App.elements.searchResults.innerHTML = '';
         document.getElementById('results-spinner').style.display = 'none';
@@ -109,7 +109,8 @@ function renderSearchResults(titles) {
     }
     titles.forEach(title => {
         const item = document.createElement('div');
-        item.className = 'bg-gray-800/90 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col w-full max-w-xs sm:w-48 sm:h-80 h-64';
+        // Portrait aspect ratio for all devices
+        item.className = 'bg-gray-800/90 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col w-40 sm:w-48 h-64 sm:h-80';
         item.addEventListener('click', () => navigateTo(title.id));
 
         const imageUrl = title.primaryImage?.url || 'https://via.placeholder.com/300x450.png?text=No+Image';
@@ -118,9 +119,9 @@ function renderSearchResults(titles) {
             : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
 
         item.innerHTML = `
-            <div class="h-40 sm:h-64 w-full bg-gray-700 overflow-hidden">${imageUrl ? `<img src="${imageUrl}" alt="${title.primaryTitle}" class="w-full h-full object-cover" />` : ''}</div>
-            <div class="p-2 sm:p-3 flex flex-col justify-between flex-1"> 
-                <div class="font-semibold text-xs sm:text-sm leading-tight flex items-start">${typeIcon}<span class="line-clamp-2">${title.primaryTitle}</span></div>
+            <div class="aspect-[2/3] w-full bg-gray-700 overflow-hidden">${imageUrl ? `<img src="${imageUrl}" alt="${title.primaryTitle}" class="w-full h-full object-cover" />` : ''}</div>
+            <div class="p-3 flex flex-col justify-between flex-1"> 
+                <div class="font-semibold text-sm leading-tight flex items-start">${typeIcon}<span class="line-clamp-2">${title.primaryTitle}</span></div>
                 <div class="text-xs text-gray-400 mt-2">${title.startYear || ''}</div>
             </div>`;
         App.elements.searchResults.appendChild(item);
@@ -560,10 +561,10 @@ function init() {
         clearTimeout(App.timers.searchDebounce);
         App.timers.searchDebounce = setTimeout(() => {
             const trimmed = value.trim();
-            if (trimmed.length >= 3 && trimmed !== lastSearchValue) {
+            if (trimmed.length >= 1 && trimmed !== lastSearchValue) {
                 lastSearchValue = trimmed;
                 search(trimmed);
-            } else if (trimmed.length < 3) {
+            } else if (trimmed.length < 1) {
                 lastSearchValue = '';
                 showHomeView();
             }
@@ -659,7 +660,7 @@ document.getElementById('explore-btn')?.addEventListener('click', () => {
 document.getElementById('main-search-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const val = App.elements.searchInput.value.trim();
-    if (val.length > 2) {
+    if (val.length > 0) {
         showSection('results');
         search(val);
     }
