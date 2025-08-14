@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Find where to stream any movie or TV show.">
+    <meta name="description" content="Find where to stream any movie or TV show. Search thousands of titles and discover streaming options across multiple platforms. Free movie and TV show finder.">
+    <meta name="keywords" content="streaming, movies, TV shows, watch online, film finder, streaming platforms, Netflix, Amazon Prime, Hulu, Disney+">
+    <meta name="author" content="Pflix">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Pflix - Find where to stream any movie or TV show">
+    <meta property="og:description" content="Search thousands of movies and TV shows to find where they're available to stream. Free streaming finder for all your favorite content.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pflix.vercel.app">
+    <meta property="og:image" content="https://pflix.vercel.app/og-image.png">
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Pflix - Find where to stream any movie or TV show">
+    <meta property="twitter:description" content="Search thousands of movies and TV shows to find where they're available to stream.">
     <meta name="theme-color" content="#111827"> <!-- bg-gray-900 -->
-    <title>Stream It</title>
+    <title>Pflix - Find where to stream any movie or TV show</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,24 +26,78 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
+<body class="bg-gray-900 text-gray-100 w-full h-full m-0 p-0">
     <div id="app-root">
-        <header class="bg-gray-800 shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
-            <h1 class="text-2xl md:text-3xl font-bold text-red-600 cursor-pointer">Stream It v2</h1>
-            <div class="flex items-center gap-4">
-                <div class="w-48 sm:w-64 md:w-80">
-                    <input type="text" id="search-input" placeholder="Search..." class="w-full bg-gray-700 text-white rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all">
+    <!-- Global Home Button: fixed position, only visible when not on homepage or player preview -->
+    <button id="global-home-btn" class="hidden fixed top-6 right-6 z-50 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-full text-lg shadow-lg transition-all flex items-center gap-2">
+        <img src="assets/images/home.svg" alt="Home" class="h-6 w-6" />
+        Home
+    </button>
+    <!-- Navbar removed. Donation, AdBlock, and About below search bar on homepage -->
+    <main id="main-content" class="flex flex-col items-center justify-center w-full h-full min-h-screen transition-all duration-500">
+            <!-- Central search -->
+            <section id="search-section" class="w-full flex flex-col items-center justify-center gap-8 py-12">
+                <div class="w-full max-w-xl flex flex-col items-center gap-4">
+                    <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-center">Find where to stream any movie or show</h2>
+                    <form id="main-search-form" class="w-full flex gap-2 justify-center">
+                        <input id="search-input" type="text" placeholder="Search movies, shows..." class="w-full bg-gray-800 text-white rounded-full py-4 px-6 text-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all" />
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-4 rounded-full text-lg transition-all">Search</button>
+                        <button type="button" id="explore-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-6 py-4 rounded-full text-lg transition-all">Explore</button>
+                    </form>
+                    <!-- Donation, AdBlock, About below search -->
+                    <div class="flex flex-col items-center gap-2 mt-6 w-full">
+                        <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-full shadow transition-all">
+                            <span>Donate me so my site keeps running</span>
+                            <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-6 w-auto" />
+                        </a>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-gray-400 text-sm">Use <a href="https://getadblock.com/en/" target="_blank" class="text-blue-400 underline">AdBlock</a> for best experience</span>
+                        </div>
+                        <button id="about-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-full text-lg transition-all mt-2">About Us</button>
+                    </div>
                 </div>
-                <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
-            </div>
-        </header>
-        <main id="main-content" class="p-4 md:p-8">
-            <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                <!-- Search results will be populated here -->
-            </div>
-            <div id="watch-page-container">
-                <!-- Details or Player page will be rendered here -->
-            </div>
+            </section>
+
+            <!-- Featured grid (Explore) -->
+            <section id="explore-section" class="w-full max-w-7xl mx-auto hidden transition-all duration-500 flex flex-col px-6">
+                <div class="flex items-center justify-center mb-8">
+                    <h3 class="text-3xl font-bold text-center">Featured</h3>
+                </div>
+                <div id="explore-spinner" class="w-full flex justify-center py-8"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>
+                <div id="featured-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 justify-items-center">
+                    <!-- Cards will be rendered by JS, portrait, two-line titles -->
+                </div>
+            </section>
+
+            <!-- Search results -->
+            <section id="results-section" class="w-full max-w-7xl mx-auto hidden transition-all duration-500 flex flex-col px-6">
+                <div class="flex items-center justify-center mb-8">
+                    <h3 class="text-3xl font-bold text-center">Search Results</h3>
+                </div>
+                <div id="results-spinner" class="w-full flex justify-center py-8"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>
+                <div id="search-results" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 justify-items-center">
+                    <!-- Cards will be rendered by JS, portrait, two-line titles -->
+                </div>
+            </section>
+
+            <!-- Details / Player container -->
+            <section id="details-section" class="w-full h-full hidden transition-all duration-500 flex flex-col overflow-hidden">
+                <div id="watch-page-container"></div>
+            </section>
+
+            <!-- About/Privacy modal/page -->
+            <section id="about-section" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden transition-all duration-500">
+                <div class="bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative">
+                    <button id="about-close" class="absolute top-4 right-4 text-gray-400 hover:text-red-400 text-2xl">&times;</button>
+                    <div class="flex flex-col items-center gap-4">
+                        <h2 class="text-3xl font-bold mb-2">About & Privacy</h2>
+                        <p class="text-lg text-gray-300 text-center">This site is a modern, upgraded clone of <a href="https://github.com/hemantapkh/streamit" class="text-red-400 underline" target="_blank">StreamIt</a> using new APIs and a better UI. It is a static site: it does not host, run, or control any content, and does not place ads except for the donation button. All streams are fetched from public third-party sources. If you have DMCA or privacy concerns, please contact the original host. I do not control or store any video or data.<br><br>For the best experience, use <a href="https://getadblock.com/en/" target="_blank" class="text-blue-400 underline">AdBlock</a>.<br><br>Donate to keep the site running! <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-full shadow transition-all ml-2"><span>Donate me</span><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-6 w-auto" /></a></p>
+                        <div class="mt-6">
+                            <button id="about-home" class="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-full text-lg transition-all">Return to Home</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 

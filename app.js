@@ -1,3 +1,40 @@
+// Global Home Button logic
+const globalHomeBtn = document.getElementById('global-home-btn');
+
+function updateGlobalHomeBtn() {
+    const activeSection = document.querySelector('#main-content > section:not(.hidden)');
+    const isPlayerFullscreen = document.fullscreenElement !== null;
+
+    if (!activeSection) {
+        globalHomeBtn.classList.add('hidden');
+        return;
+    }
+
+    const sectionId = activeSection.id;
+    // Show on explore, results, and details pages. Hide on search (homepage) and about.
+    const showButton = ['explore-section', 'results-section', 'details-section'].includes(sectionId);
+
+    if (showButton && !isPlayerFullscreen) {
+        globalHomeBtn.classList.remove('hidden');
+    } else {
+        globalHomeBtn.classList.add('hidden');
+    }
+}
+
+globalHomeBtn.addEventListener('click', () => {
+    // Clear all URL parameters and go home
+    const url = new URL(window.location);
+    url.search = '';
+    window.history.pushState({}, '', url);
+    showSection('search');
+    document.title = 'Pflix - Find where to stream any movie or TV show';
+    if(App.elements.searchInput) App.elements.searchInput.value = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Listen for fullscreen changes to hide/show the button
+document.addEventListener('fullscreenchange', updateGlobalHomeBtn);
+
 /**
  * Main application state and configuration.
  */
@@ -10,6 +47,15 @@ const App = {
         searchDebounce: null,
     },
     currentMedia: null, // Holds data for the currently viewed media
+    // IDs to showcase on the homepage hero as featured items
+    featured: [
+        'tt1375666', // Inception
+        'tt0816692', // Interstellar
+        'tt0944947', // Game of Thrones
+        'tt0903747', // Breaking Bad
+        'tt4154796', // Avengers: Endgame
+        'tt7286456', // Joker
+    ],
 };
 
 /**
@@ -17,17 +63,38 @@ const App = {
  */
 async function search(query) {
     if (query.length < 3) {
-        renderSearchResults([]);
+        showHomeView();
+        App.elements.searchResults.innerHTML = '';
+        document.getElementById('results-spinner').style.display = 'none';
+        // Clear URL parameters when going back to homepage
+        const url = new URL(window.location);
+        url.searchParams.delete('q');
+        url.searchParams.delete('id');
+        url.searchParams.delete('view');
+        window.history.pushState({}, '', url);
+        document.title = 'Pflix - Find where to stream any movie or TV show';
         return;
     }
+    
+    // Update URL with search query
+    const url = new URL(window.location);
+    url.searchParams.set('q', query);
+    url.searchParams.delete('id');
+    url.searchParams.delete('view');
+    window.history.pushState({ query }, '', url);
+    document.title = `Search: ${query} - Pflix`;
+    
+    document.getElementById('results-spinner').style.display = 'flex';
     try {
         const response = await fetch(`${App.api.baseUrl}/search/titles?query=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error(`API error: ${response.statusText}`);
         const data = await response.json();
         renderSearchResults(data.titles || []);
+        document.getElementById('results-spinner').style.display = 'none';
     } catch (error) {
         console.error("Error fetching search results:", error);
         renderError("Could not fetch search results.");
+        document.getElementById('results-spinner').style.display = 'none';
     }
 }
 
@@ -35,29 +102,47 @@ async function search(query) {
  * Renders the search results on the page.
  */
 function renderSearchResults(titles) {
+    showSearchView();
+    document.getElementById('results-spinner').style.display = 'none';
     App.elements.searchResults.innerHTML = '';
     if (titles.length === 0) {
         if (App.elements.searchInput.value.length > 2) {
             App.elements.searchResults.innerHTML = `<p class="col-span-full text-center text-gray-400 mt-8">No results found for "${App.elements.searchInput.value}"</p>`;
         }
+        // Always hide spinner even if no results
+        document.getElementById('results-spinner').style.display = 'none';
         return;
     }
     titles.forEach(title => {
         const item = document.createElement('div');
-        item.className = 'bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1 transition-all duration-200 cursor-pointer';
+        item.className = 'bg-gray-800/90 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col w-48 h-80';
         item.addEventListener('click', () => navigateTo(title.id));
 
-        const imageUrl = title.primaryImage ? title.primaryImage.url : 'https://via.placeholder.com/300x450.png?text=No+Image';
+        const imageUrl = title.primaryImage?.url || 'https://via.placeholder.com/300x450.png?text=No+Image';
+        const typeIcon = title.type === 'tvSeries' || title.type === 'tvMiniSeries'
+            ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
+            : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
 
         item.innerHTML = `
-            <img src="${imageUrl}" alt="${title.primaryTitle}" class="w-full h-auto object-cover">
-            <div class="p-4">
-                <h3 class="font-bold text-lg truncate">${title.primaryTitle}</h3>
-                <p class="text-gray-400">${title.startYear || 'N/A'}</p>
-            </div>
-        `;
+            <div class="h-64 w-full bg-gray-700 overflow-hidden">${imageUrl ? `<img src="${imageUrl}" alt="${title.primaryTitle}" class="w-full h-full object-cover" />` : ''}</div>
+            <div class="p-3 flex flex-col justify-between flex-1"> 
+                <div class="font-semibold text-sm leading-tight flex items-start">${typeIcon}<span class="line-clamp-2">${title.primaryTitle}</span></div>
+                <div class="text-xs text-gray-400 mt-2">${title.startYear || ''}</div>
+            </div>`;
         App.elements.searchResults.appendChild(item);
     });
+// Home button listeners for all main sections
+document.getElementById('explore-home-btn')?.addEventListener('click', () => {
+    showSection('search');
+});
+document.getElementById('results-home-btn')?.addEventListener('click', () => {
+    showSection('search');
+});
+document.getElementById('details-home-btn')?.addEventListener('click', () => {
+    showSection('search');
+});
+    // Always hide spinner after rendering results
+    document.getElementById('results-spinner').style.display = 'none';
 }
 
 /**
@@ -89,9 +174,14 @@ function navigateTo(imdbId, play = false) {
  * Hides search and shows the main content container with a spinner.
  */
 function showContentView() {
+    // Hide hero and search grid, show content
+    if (App.elements.homeHero) App.elements.homeHero.classList.add('hidden');
+    App.elements.searchResults.classList.add('hidden');
+    App.elements.watchPageContainer.classList.remove('hidden');
+    // Also set display for backward compatibility
     App.elements.searchResults.style.display = 'none';
     App.elements.watchPageContainer.style.display = 'block';
-    App.elements.watchPageContainer.innerHTML = `<div class="loading-spinner"></div>`;
+    App.elements.watchPageContainer.innerHTML = `<div class="w-full flex justify-center py-16"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>`;
 }
 
 /**
@@ -127,18 +217,24 @@ function showPlayerPage() {
  * Hides the content container and shows the search view.
  */
 function showSearchView() {
+    if (App.elements.homeHero) App.elements.homeHero.classList.add('hidden');
+    App.elements.watchPageContainer.classList.add('hidden');
+    App.elements.searchResults.classList.remove('hidden');
+    // Display style for legacy
     App.elements.searchResults.style.display = 'grid';
     App.elements.watchPageContainer.style.display = 'none';
     App.elements.watchPageContainer.innerHTML = '';
-    const url = new URL(window.location);
-    url.searchParams.delete('id');
-    url.searchParams.delete('view');
-    if (window.location.pathname !== url.pathname || window.location.search !== '') {
-        window.history.pushState({}, '', url);
-    }
-    document.title = 'Stream It';
-    App.elements.searchInput.value = '';
-    App.elements.searchInput.focus();
+    document.title = 'Pflix';
+}
+
+function showHomeView() {
+    if (!App.elements.homeHero) return showSearchView();
+    App.elements.watchPageContainer.classList.add('hidden');
+    App.elements.searchResults.classList.add('hidden');
+    App.elements.homeHero.classList.remove('hidden');
+    App.elements.watchPageContainer.style.display = 'none';
+    App.elements.searchResults.style.display = 'none';
+    document.title = 'Pflix';
 }
 
 /**
@@ -174,7 +270,13 @@ async function fetchMediaData(imdbId, playOnLoad) {
  * Renders the details page, showing info and a play button.
  */
 function renderDetailsPage(data) {
-    document.title = `${data.primaryTitle} - Details`;
+    // Update URL and page title
+    const url = new URL(window.location);
+    url.searchParams.set('id', data.id);
+    url.searchParams.delete('view');
+    url.searchParams.delete('q');
+    window.history.pushState({ imdbId: data.id }, '', url);
+    document.title = `${data.primaryTitle} (${data.startYear}) - Pflix`;
 
     const ratingsHTML = data.rating ? `
         <div class="flex items-center space-x-2">
@@ -186,10 +288,10 @@ function renderDetailsPage(data) {
         </div>` : '';
 
     App.elements.watchPageContainer.innerHTML = `
-        <div class="relative min-h-screen -m-4 md:-m-8">
-            <div class="absolute inset-0 bg-cover bg-center" style="background-image: url(${data.primaryImage?.url || ''})"></div>
+        <div class="fixed inset-0 w-full h-full overflow-hidden">
+            <div class="absolute inset-0 bg-cover bg-center scale-110" style="background-image: url(${data.primaryImage?.url || ''})"></div>
             <div class="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
-            <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 p-8 min-h-screen">
+            <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 p-8 min-h-screen w-full">
                 <img src="${data.primaryImage?.url || ''}" alt="Poster" class="w-64 md:w-80 rounded-lg shadow-2xl">
                 <div class="max-w-2xl text-center md:text-left">
                     <h1 class="text-4xl md:text-6xl font-bold text-white">${data.primaryTitle}</h1>
@@ -220,20 +322,38 @@ function renderDetailsPage(data) {
  * Renders the player page with video, servers, and episode selectors.
  */
 function renderPlayerPage(data) {
-    document.title = `${data.primaryTitle} - Playing`;
+    // Update URL and page title for player
+    const url = new URL(window.location);
+    url.searchParams.set('id', data.id);
+    url.searchParams.set('view', 'player');
+    url.searchParams.delete('q');
+    window.history.pushState({ imdbId: data.id, play: true }, '', url);
+    document.title = `${data.primaryTitle} - Now Playing - Pflix`;
+    
     App.elements.watchPageContainer.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div class="lg:col-span-3">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 h-full">
+            <div class="lg:col-span-3 flex flex-col h-full">
                 <div id="stream-player-section" class="w-full bg-black rounded-lg overflow-hidden relative aspect-video shadow-2xl">
                     <!-- Player iframe will be loaded here -->
                 </div>
+                <div class="flex flex-col items-center gap-2 mt-4">
+                    <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-full shadow transition-all">
+                        <span>Donate me so my site keeps running</span>
+                        <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-6 w-auto" />
+                    </a>
+                    <a href="https://getadblock.com/en/" target="_blank" class="flex items-center gap-2 mt-2 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 hover:bg-white/20 transition-all">
+                        <img src="https://getadblock.com/images/updateAssets/core_logo_full.svg" alt="AdBlock" class="h-6 w-6" />
+                        <span class="text-gray-200 text-sm font-medium">AdBlock can fix most issues with popups/ads</span>
+                    </a>
+                </div>
             </div>
-            <aside class="lg:col-span-1 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <aside class="lg:col-span-1 bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col gap-4">
                 <div id="episode-selector-container"></div>
                 <h2 class="text-xl font-bold mb-4">Servers</h2>
                 <div id="stream-buttons" class="flex flex-col gap-2"></div>
             </aside>
         </div>`;
+    // Remove redundant home button listener - using global home button instead
 
     if (App.currentMedia.isTv) {
         if (Object.keys(App.currentMedia.seasons).length > 0) {
@@ -261,9 +381,16 @@ async function fetchEpisodes() {
         const data = await response.json();
         const episodes = data.episodes || [];
 
+        // API uses `season` (string). Normalize and ensure we have `seasonNumber` and `primaryTitle`.
         App.currentMedia.seasons = episodes.reduce((acc, ep) => {
-            if (!acc[ep.seasonNumber]) acc[ep.seasonNumber] = [];
-            acc[ep.seasonNumber].push(ep);
+            const rawSeason = ep.season ?? ep.seasonNumber ?? '1';
+            const seasonKey = String(rawSeason);
+            if (!acc[seasonKey]) acc[seasonKey] = [];
+            acc[seasonKey].push({
+                ...ep,
+                seasonNumber: Number(rawSeason) || 1,
+                primaryTitle: ep.primaryTitle || ep.title || `Episode ${ep.episodeNumber}`,
+            });
             return acc;
         }, {});
         Object.values(App.currentMedia.seasons).forEach(s => s.sort((a,b) => a.episodeNumber - b.episodeNumber));
@@ -314,7 +441,7 @@ function renderEpisodeSelectors() {
     });
 
     const updateEpisodes = () => {
-        const selectedSeason = App.currentMedia.seasons[seasonSelect.value] || [];
+    const selectedSeason = App.currentMedia.seasons[seasonSelect.value] || [];
         episodeSelect.innerHTML = '';
         selectedSeason.forEach(ep => {
             const option = new Option(`E${ep.episodeNumber}: ${ep.primaryTitle}`, ep.episodeNumber);
@@ -358,12 +485,15 @@ function renderServerButtons() {
         button.onclick = (e) => {
             document.querySelectorAll('.stream-button').forEach(btn => {
                 btn.classList.remove('active', 'bg-red-600');
-                if (btn.classList.contains('bg-gray-700') === false) {
-                    btn.classList.add('bg-gray-700');
-                }
+                if (!btn.classList.contains('bg-gray-700')) btn.classList.add('bg-gray-700');
             });
             e.currentTarget.classList.add('active', 'bg-red-600');
             e.currentTarget.classList.remove('bg-gray-700');
+            // Always reload the player iframe and show spinner
+            const playerSection = document.getElementById('stream-player-section');
+            if (playerSection) {
+                playerSection.innerHTML = `<div class="w-full h-full flex items-center justify-center"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>`;
+            }
             showStream(id, App.currentMedia);
         };
         container.appendChild(button);
@@ -384,40 +514,37 @@ function showStream(streamId, media) {
     const playerSection = document.getElementById('stream-player-section');
     if (!playerSection || !media) return;
 
-    playerSection.innerHTML = `<div class="w-full h-full flex items-center justify-center"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>`;
-
-    let season = 1, episode = 1;
-    if (media.isTv) {
+    const provider = STREAMING_PROVIDERS[streamId];
+    const type = media.isTv ? 'tv' : 'movie';
+    let url;
+    if (type === 'movie') {
+        // Use direct embed logic like streamit
+        url = provider.url(media.id);
+        playerSection.innerHTML = `<iframe src="${url}" title="Pflix Player" allowfullscreen class="w-full h-full"></iframe>`;
+    } else {
+        // TV: keep episode logic
+        let season = 1, episode = 1;
         const seasonSelect = document.getElementById('season-select');
         const episodeSelect = document.getElementById('episode-select');
-        season = seasonSelect?.value || 1;
-        episode = episodeSelect?.value || 1;
-
+        season = Number(seasonSelect?.value || 1);
+        episode = Number(episodeSelect?.value || 1);
         if ((seasonSelect && !season) || (episodeSelect && !episode)) {
             return;
         }
+        if (!provider.supports.includes('tv')) {
+            playerSection.innerHTML = `<div class="w-full h-full flex items-center justify-center text-red-400"><p>This server does not support TV streaming.</p></div>`;
+            return;
+        }
+        url = provider.url(media.id, season, episode, true);
+        playerSection.innerHTML = `<iframe src="${url}" title="Pflix Player" allowfullscreen class="w-full h-full"></iframe>`;
     }
-
-    const url = STREAMING_PROVIDERS[streamId].url(media.id, season, episode, media.isTv);
-
-    const iframe = document.createElement('iframe');
-    iframe.src = url;
-    iframe.title = "Stream It Player";
-    iframe.allowFullscreen = true;
-    iframe.className = "w-full h-full";
-
-    iframe.onload = () => {
-        playerSection.innerHTML = '';
-        playerSection.appendChild(iframe);
-    };
-
-    iframe.onerror = () => {
-        playerSection.innerHTML = `<div class="w-full h-full flex items-center justify-center text-red-400"><p>Failed to load stream. Please try another server.</p></div>`;
-    };
 }
 
 function renderError(message) {
-    App.elements.watchPageContainer.innerHTML = `<div class="error-message">${message}</div>`;
+    if (App.elements.homeHero) App.elements.homeHero.classList.add('hidden');
+    App.elements.searchResults.classList.add('hidden');
+    App.elements.watchPageContainer.classList.remove('hidden');
+    App.elements.watchPageContainer.innerHTML = `<div class="w-full text-center text-red-400 py-10">${message}</div>`;
 }
 
 /**
@@ -426,18 +553,48 @@ function renderError(message) {
 function init() {
     App.elements = {
         searchInput: document.getElementById('search-input'),
+        heroSearchInput: document.getElementById('hero-search-input'),
         searchResults: document.getElementById('search-results'),
         watchPageContainer: document.getElementById('watch-page-container'),
-        logo: document.querySelector('.main-header h1'),
+        logo: document.querySelector('header h1'),
+        homeHero: document.getElementById('home-hero'),
+        featuredGrid: document.getElementById('featured-grid'),
     };
 
-    App.elements.searchInput.addEventListener('input', (e) => {
+    let lastSearchValue = '';
+    const handleSearch = (value) => {
         clearTimeout(App.timers.searchDebounce);
-        App.timers.searchDebounce = setTimeout(() => search(e.target.value.trim()), 300);
-    });
+        App.timers.searchDebounce = setTimeout(() => {
+            const trimmed = value.trim();
+            if (trimmed.length >= 3 && trimmed !== lastSearchValue) {
+                lastSearchValue = trimmed;
+                search(trimmed);
+            } else if (trimmed.length < 3) {
+                lastSearchValue = '';
+                showHomeView();
+            }
+        }, 2000);
+    };
+    App.elements.searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
+    if (App.elements.heroSearchInput) {
+        App.elements.heroSearchInput.addEventListener('input', (e) => {
+            App.elements.searchInput.value = e.target.value;
+            handleSearch(e.target.value);
+        });
+    }
     
-    App.elements.logo.style.cursor = 'pointer';
-    App.elements.logo.addEventListener('click', showSearchView);
+    if (App.elements.logo) {
+        App.elements.logo.style.cursor = 'pointer';
+        App.elements.logo.addEventListener('click', () => {
+            const url = new URL(window.location);
+            url.searchParams.delete('id');
+            url.searchParams.delete('view');
+            window.history.pushState({}, '', url);
+            if (App.elements.searchInput) App.elements.searchInput.value = '';
+            if (App.elements.heroSearchInput) App.elements.heroSearchInput.value = '';
+            if (App.elements.homeHero) showHomeView(); else showSearchView();
+        });
+    }
 
     window.onpopstate = () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -446,7 +603,8 @@ function init() {
         if (imdbId) {
             navigateTo(imdbId, play);
         } else {
-            showSearchView();
+            // No media selected: show homepage (search section) without results spinner
+            showSection('search');
         }
     };
 
@@ -454,11 +612,172 @@ function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const imdbId = urlParams.get('id');
     const play = urlParams.get('view') === 'player';
+    const query = urlParams.get('q');
+    const page = urlParams.get('page');
+    
     if (imdbId) {
         navigateTo(imdbId, play);
+    } else if (query) {
+        App.elements.searchInput.value = query;
+        search(query);
+    } else if (page === 'explore') {
+        showSection('explore');
+        loadFeatured();
     } else {
-        showSearchView();
+        // Default to homepage (search section). Do not show results on initial load.
+        showSection('search');
+        document.title = 'Pflix - Find where to stream any movie or TV show';
     }
 }
 
 init();
+
+// --- UI Navigation & Modal Logic ---
+// Navbar removed, no nav-* listeners
+
+document.getElementById('about-close')?.addEventListener('click', () => {
+    showSection('search');
+});
+
+document.getElementById('about-home')?.addEventListener('click', () => {
+    showSection('search');
+});
+
+document.getElementById('about-btn')?.addEventListener('click', () => {
+    showSection('about');
+});
+
+document.getElementById('explore-btn')?.addEventListener('click', () => {
+    // Update URL for explore page
+    const url = new URL(window.location);
+    url.searchParams.set('page', 'explore');
+    url.searchParams.delete('q');
+    url.searchParams.delete('id');
+    url.searchParams.delete('view');
+    window.history.pushState({ page: 'explore' }, '', url);
+    document.title = 'Featured Movies & TV Shows - Pflix';
+    
+    showSection('explore');
+    loadFeatured();
+});
+
+// Central search form: prevent default submit
+document.getElementById('main-search-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = App.elements.searchInput.value.trim();
+    if (val.length > 2) {
+        showSection('results');
+        search(val);
+    }
+});
+
+// Section show/hide logic for smooth transitions
+function showSection(section) {
+    const sections = {
+        search: document.getElementById('search-section'),
+        explore: document.getElementById('explore-section'),
+        results: document.getElementById('results-section'),
+        details: document.getElementById('details-section'),
+        about: document.getElementById('about-section'),
+    };
+    Object.entries(sections).forEach(([key, el]) => {
+        if (!el) return;
+        if (key === section) {
+            el.classList.remove('hidden');
+            el.classList.add('flex', 'fade-in');
+            el.classList.remove('fade-out');
+        } else {
+            el.classList.add('hidden');
+            el.classList.remove('flex', 'fade-in');
+            el.classList.add('fade-out');
+        }
+    });
+    // Hide spinners when entering non-results sections
+    if (section !== 'results') {
+        const rs = document.getElementById('results-spinner');
+        if (rs) rs.style.display = 'none';
+    }
+    // Details/player view special case
+    if (section === 'details') {
+        sections.details?.classList.remove('hidden');
+        sections.details?.classList.add('flex', 'fade-in');
+        sections.details?.classList.remove('fade-out');
+    }
+    // Update the global home button visibility after any section change
+    updateGlobalHomeBtn();
+}
+
+// Show correct section on navigation
+function showHomeView() {
+    showSection('search');
+}
+function showSearchView() {
+    showSection('results');
+}
+function showContentView() {
+    showSection('details');
+}
+
+/**
+ * Load featured cards on the home hero
+ */
+async function loadFeatured() {
+    if (!App.elements.featuredGrid) return;
+    App.elements.featuredGrid.innerHTML = '';
+    document.getElementById('explore-spinner').style.display = 'flex';
+    try {
+        const res = await fetch(`${App.api.baseUrl}/titles`);
+        if (!res.ok) throw new Error('Failed to load featured');
+        const data = await res.json();
+        const list = (data.titles || []).slice(0, 12).map(d => ({
+            id: d.id,
+            title: d.primaryTitle,
+            year: d.startYear,
+            img: d.primaryImage?.url,
+            type: d.type,
+        }));
+        list.forEach((c) => {
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'text-left bg-gray-800/90 hover:bg-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/30 transition-all flex flex-col w-48 h-80';
+            const typeIcon = c.type === 'tvSeries' || c.type === 'tvMiniSeries'
+                ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
+                : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
+            card.innerHTML = `
+                <div class="h-64 w-full bg-gray-700 overflow-hidden">${c.img ? `<img src="${c.img}" alt="${c.title}" class="w-full h-full object-cover" />` : ''}</div>
+                <div class="p-3 flex flex-col justify-between flex-1"> 
+                    <div class="font-semibold text-sm leading-tight flex items-start line-clamp-2">${typeIcon}<span class="line-clamp-2">${c.title}</span></div>
+                    <div class="text-xs text-gray-400 mt-2">${c.year || ''}</div>
+                </div>`;
+            card.addEventListener('click', () => navigateTo(c.id, false));
+            App.elements.featuredGrid.appendChild(card);
+        });
+        document.getElementById('explore-spinner').style.display = 'none';
+    } catch (e) {
+        console.warn('Featured load failed, falling back to static IDs', e);
+        const ids = App.featured.slice(0, 12);
+        for (const id of ids) {
+            try {
+                const r = await fetch(`${App.api.baseUrl}/titles/${id}`);
+                if (!r.ok) continue;
+                const d = await r.json();
+                const c = { id: d.id, title: d.primaryTitle, year: d.startYear, img: d.primaryImage?.url, type: d.type };
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'text-left bg-gray-800/90 hover:bg-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/30 transition-all flex flex-col w-48 h-80';
+                const typeIcon = c.type === 'tvSeries' || c.type === 'tvMiniSeries'
+                    ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
+                    : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
+                card.innerHTML = `
+                    <div class="h-64 w-full bg-gray-700 overflow-hidden">${c.img ? `<img src="${c.img}" alt="${c.title}" class="w-full h-full object-cover" />` : ''}</div>
+                    <div class="p-3 flex flex-col justify-between flex-1">
+                        <div class="font-semibold text-sm leading-tight flex items-start line-clamp-2">${typeIcon}<span class="line-clamp-2">${c.title}</span></div>
+                        <div class="text-xs text-gray-400 mt-2">${c.year || ''}</div>
+                    </div>`;
+                card.addEventListener('click', () => navigateTo(c.id, false));
+                App.elements.featuredGrid.appendChild(card);
+            } catch {}
+        }
+        document.getElementById('explore-spinner').style.display = 'none';
+    }
+}
