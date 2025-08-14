@@ -22,14 +22,8 @@ function updateGlobalHomeBtn() {
 }
 
 globalHomeBtn.addEventListener('click', () => {
-    // Clear all URL parameters and go home
-    const url = new URL(window.location);
-    url.search = '';
-    window.history.pushState({}, '', url);
-    showSection('search');
-    document.title = 'Pflix - Find where to stream any movie or TV show';
-    if(App.elements.searchInput) App.elements.searchInput.value = '';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Redirect to root and clear all state
+    window.location.href = '/';
 });
 
 // Listen for fullscreen changes to hide/show the button
