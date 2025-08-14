@@ -1,53 +1,53 @@
 // Streaming providers configuration
 const STREAMING_PROVIDERS = {
     vidsrc: {
-        name: 'S1',
-        url: (id) => `https://vidsrc.net/embed/movie/${id}`,
-        referrerPolicy: 'no-referrer'
+        name: 'VidSrc',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://vidsrc.net/embed/tv/${id}/${season}-${episode}` : `https://vidsrc.net/embed/movie/${id}`
     },
     multiembed: {
-        name: 'S2',
-        url: (id) => `https://multiembed.mov/directstream.php?video_id=${id}`,
-        referrerPolicy: 'no-referrer'
+        name: 'Multiembed',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://multiembed.mov/directstream.php?video_id=${id}&s=${season}&e=${episode}` : `https://multiembed.mov/directstream.php?video_id=${id}`
     },
     embed2: {
-        name: 'S3',
-        url: (id) => `https://www.2embed.cc/embed/${id}`,
-        referrerPolicy: null
+        name: '2Embed',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://www.2embed.cc/embed/tv/${id}&s=${season}&e=${episode}` : `https://www.2embed.cc/embed/${id}`
     },
     embedsu: {
-        name: 'S4',
-        url: (id) => `https://embed.su/embed/movie/${id}`,
-        referrerPolicy: 'no-referrer'
+        name: 'Embed.su',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://embed.su/embed/tv?imdb=${id}&s=${season}&e=${episode}` : `https://embed.su/embed/movie?imdb=${id}`
     },
     autoembed: {
-        name: 'S5',
-        url: (id) => `https://player.autoembed.cc/embed/movie/${id}`,
-        referrerPolicy: 'no-referrer'
+        name: 'AutoEmbed',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://player.autoembed.cc/embed/tv/${id}/${season}-${episode}` : `https://player.autoembed.cc/embed/movie/${id}`
     },
     soap2day: {
-        name: 'S6',
-        url: (id) => `https://soap2dayto.win/embed/movie/${id}`,
-        referrerPolicy: 'no-referrer'
+        name: 'Soap2Day',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://soap2day.gg/embed/tv/${id}/${season}/${episode}` : `https://soap2day.gg/embed/movie/${id}`
     },
     vidsrccc: {
-        name: 'S7',
-        url: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
-        referrerPolicy: 'no-referrer'
+        name: 'VidSrc.cc',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}` : `https://vidsrc.cc/v2/embed/movie/${id}`
     },
     vidlink: {
-        name: 'S8',
-        url: (id) => `https://vidlink.pro/movie/${id}`,
-        referrerPolicy: 'no-referrer'
+        name: 'VidLink',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://vidlink.pro/embed/tv/${id}/${season}/${episode}` : `https://vidlink.pro/movie/${id}`
     },
     vidfast: {
-        name: 'S9',
-        url: (id) => `https://vidfast.pro/movie/${id}`,
-        referrerPolicy: 'no-referrer'
-  },
+        name: 'VidFast',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://vidfast.pro/embed/tv/${id}/${season}/${episode}` : `https://vidfast.pro/movie/${id}`
+    },
     videasy: {
-        name: 'S10',
-        url: (id) => `https://player.videasy.net/movie/${id}`,
-        referrerPolicy: 'no-referrer'
+        name: 'VidEasy',
+        supports: ['movie', 'tv'],
+        url: (id, season, episode, isTv) => isTv ? `https://player.videasy.net/embed/tv/${id}/${season}/${episode}` : `https://player.videasy.net/movie/${id}`
     },
 };
