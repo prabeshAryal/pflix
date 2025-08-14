@@ -240,14 +240,14 @@ function renderPlayerPage(data) {
             renderEpisodeSelectors();
             renderServerButtons();
             const firstProviderId = Object.keys(STREAMING_PROVIDERS).find(id => STREAMING_PROVIDERS[id].supports.includes('tv'));
-            if (firstProviderId) showStream(firstProviderId);
+            if (firstProviderId) showStream(firstProviderId, App.currentMedia);
         } else {
             fetchEpisodes();
         }
     } else {
         renderServerButtons();
         const firstProviderId = Object.keys(STREAMING_PROVIDERS).find(id => STREAMING_PROVIDERS[id].supports.includes('movie'));
-        if (firstProviderId) showStream(firstProviderId);
+        if (firstProviderId) showStream(firstProviderId, App.currentMedia);
     }
 }
 
@@ -271,12 +271,16 @@ async function fetchEpisodes() {
         renderEpisodeSelectors();
         renderServerButtons();
         const firstProviderId = Object.keys(STREAMING_PROVIDERS).find(id => STREAMING_PROVIDERS[id].supports.includes('tv'));
-        if (firstProviderId) showStream(firstProviderId);
+        if (firstProviderId) showStream(firstProviderId, App.currentMedia);
 
     } catch (error) {
         console.error("Error fetching episodes:", error);
-        document.getElementById('episode-selector-container').innerHTML = `<p class="text-red-400 text-sm">Could not load episodes.</p>`;
+        document.getElementById('episode-selector-container').innerHTML = `<p class="text-red-400 text-sm">Could not load episodes. Defaulting to S01E01.</p>`;
         renderServerButtons();
+        const firstProviderId = Object.keys(STREAMING_PROVIDERS).find(id => STREAMING_PROVIDERS[id].supports.includes('tv'));
+        if (firstProviderId) {
+            showStream(firstProviderId, App.currentMedia);
+        }
     }
 }
 
@@ -331,7 +335,7 @@ function renderEpisodeSelectors() {
 function updateStreamSource() {
     const activeProvider = document.querySelector('button.stream-button.active')?.dataset.providerId;
     if (activeProvider) {
-        showStream(activeProvider);
+        showStream(activeProvider, App.currentMedia);
     }
 }
 
@@ -360,7 +364,7 @@ function renderServerButtons() {
             });
             e.currentTarget.classList.add('active', 'bg-red-600');
             e.currentTarget.classList.remove('bg-gray-700');
-            showStream(id);
+            showStream(id, App.currentMedia);
         };
         container.appendChild(button);
     });
@@ -373,15 +377,17 @@ function renderServerButtons() {
 
 /**
  * Displays the selected stream in the player with a loading indicator.
+ * @param {string} streamId The ID of the streaming provider.
+ * @param {object} media The media object from App.currentMedia.
  */
-function showStream(streamId) {
+function showStream(streamId, media) {
     const playerSection = document.getElementById('stream-player-section');
-    if (!playerSection) return;
+    if (!playerSection || !media) return;
 
     playerSection.innerHTML = `<div class="w-full h-full flex items-center justify-center"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>`;
 
     let season = 1, episode = 1;
-    if (App.currentMedia.isTv) {
+    if (media.isTv) {
         const seasonSelect = document.getElementById('season-select');
         const episodeSelect = document.getElementById('episode-select');
         season = seasonSelect?.value || 1;
@@ -392,7 +398,7 @@ function showStream(streamId) {
         }
     }
 
-    const url = STREAMING_PROVIDERS[streamId].url(App.currentMedia.id, season, episode, App.currentMedia.isTv);
+    const url = STREAMING_PROVIDERS[streamId].url(media.id, season, episode, media.isTv);
 
     const iframe = document.createElement('iframe');
     iframe.src = url;
