@@ -1411,8 +1411,25 @@ function showContentView() {
     const container = document.getElementById('watch-page-container');
     if (container) {
         container.innerHTML = `
-            <div class="details-loading" role="status" aria-label="Loading">
-                <div class="details-loading-spinner"></div>
+            <div class="details-skeleton" role="status" aria-label="Loading title details">
+                <div class="details-skeleton-header">
+                    <div class="skeleton-block details-skeleton-back"></div>
+                    <div class="skeleton-block details-skeleton-heading"></div>
+                </div>
+                <div class="details-skeleton-layout">
+                    <div class="skeleton-block details-skeleton-poster"></div>
+                    <div class="details-skeleton-copy">
+                        <div class="details-skeleton-meta">
+                            <div class="skeleton-block details-skeleton-pill"></div>
+                            <div class="skeleton-block details-skeleton-pill details-skeleton-pill-short"></div>
+                        </div>
+                        <div class="skeleton-block details-skeleton-title"></div>
+                        <div class="skeleton-block details-skeleton-line details-skeleton-line-wide"></div>
+                        <div class="skeleton-block details-skeleton-line"></div>
+                        <div class="skeleton-block details-skeleton-line details-skeleton-line-short"></div>
+                        <div class="skeleton-block details-skeleton-action"></div>
+                    </div>
+                </div>
             </div>
         `;
     }
