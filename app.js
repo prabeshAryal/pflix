@@ -35,7 +35,7 @@ document.addEventListener('fullscreenchange', updateGlobalHomeBtn);
 const App = {
     elements: {},
     api: {
-        baseUrl: 'https://imdb-api.prabeshtechnologies.workers.dev',
+        baseUrl: 'https://imdb-api.prabesh.tech',
     },
     timers: {
         searchDebounce: null,
