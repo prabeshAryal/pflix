@@ -9,6 +9,7 @@ const App = {
     timers: {
         searchDebounce: null,
     },
+    mediaRequestToken: 0,
     currentMedia: null, // Holds data for the currently viewed media
     // IDs to showcase on the homepage hero as featured items
     featured: [
@@ -307,8 +308,9 @@ function showContentView() {
  */
 function showDetailsPage(imdbId) {
     showContentView();
+    const requestToken = ++App.mediaRequestToken;
     if (!App.currentMedia || App.currentMedia.id !== imdbId) {
-        fetchMediaData(imdbId, false); // playOnLoad = false
+        fetchMediaData(imdbId, false, requestToken); // playOnLoad = false
     } else {
         renderDetailsPage(App.currentMedia.details);
     }
@@ -319,13 +321,13 @@ function showDetailsPage(imdbId) {
  */
 function showPlayerPage() {
     showContentView();
-    if (App.currentMedia) {
+    const requestToken = ++App.mediaRequestToken;
+    const imdbId = new URLSearchParams(window.location.search).get('id');
+    if (App.currentMedia && App.currentMedia.id === imdbId) {
         renderPlayerPage(App.currentMedia.details);
     } else {
-        const urlParams = new URLSearchParams(window.location.search);
-        const imdbId = urlParams.get('id');
         if (imdbId) {
-            fetchMediaData(imdbId, true); // playOnLoad = true
+            fetchMediaData(imdbId, true, requestToken); // playOnLoad = true
         }
     }
 }
@@ -358,8 +360,9 @@ function showHomeView() {
  * Fetches detailed media data from the API.
  * @param {string} imdbId
  * @param {boolean} playOnLoad - Whether to render the player or details page after fetching.
+ * @param {number} requestToken - Prevents stale selections from replacing the current view.
  */
-async function fetchMediaData(imdbId, playOnLoad) {
+async function fetchMediaData(imdbId, playOnLoad, requestToken) {
     try {
         let data = null;
         // 1. Try new API endpoint: /title/{id}
@@ -400,6 +403,8 @@ async function fetchMediaData(imdbId, playOnLoad) {
                 }
             } catch (_) {}
         }
+
+        if (requestToken !== App.mediaRequestToken) return;
 
         // Normalize data across APIs
         const titleName = data?.title || data?.primaryTitle || data?.name || imdbId;
@@ -482,6 +487,7 @@ async function fetchMediaData(imdbId, playOnLoad) {
             renderDetailsPage(normalizedData);
         }
     } catch (error) {
+        if (requestToken !== App.mediaRequestToken) return;
         console.error("Error fetching media data:", error);
         renderError("Could not fetch media details.");
     }
