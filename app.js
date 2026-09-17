@@ -563,7 +563,7 @@ function renderDetailsPage(data) {
 
     document.getElementById('details-home-btn')?.addEventListener('click', navigateHome);
 
-    document.getElementById('play-button').addEventListener('click', () => {
+    document.getElementById('play-button')?.addEventListener('click', () => {
         navigateTo(data.id, true);
     });
 
@@ -1215,7 +1215,7 @@ function init() {
         }, 2000);
     };
 
-    App.elements.searchInput.addEventListener('input', (e) => {
+    App.elements.searchInput?.addEventListener('input', (e) => {
         handleSearch(e.target.value);
     });
 
