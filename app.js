@@ -305,7 +305,41 @@ async function fetchMediaData(imdbId, playOnLoad) {
 
         // Normalize data across APIs
         const titleName = data?.title || data?.primaryTitle || data?.name || imdbId;
-        const posterUrl = data?.image || data?.image_large || data?.primaryImage?.url || data?.images?.[0] || '';
+        let posterUrl = data?.image || data?.image_large || data?.primaryImage?.url || data?.images?.[0] || '';
+
+        // If poster URL is missing or points to dead images.metahub.space CDN, resolve working poster
+        if (!posterUrl || posterUrl.includes('metahub.space')) {
+            const valid = (data?.images || []).find(x => x && !x.includes('metahub.space'));
+            if (valid) {
+                posterUrl = valid;
+            } else {
+                try {
+                    // Try TVMaze if series
+                    const tmRes = await fetch(`https://api.tvmaze.com/lookup/shows?imdb=${imdbId}`);
+                    if (tmRes.ok) {
+                        const tmData = await tmRes.json();
+                        if (tmData?.image?.original || tmData?.image?.medium) {
+                            posterUrl = tmData.image.original || tmData.image.medium;
+                        }
+                    }
+                } catch (_) {}
+
+                // If still not found, try suggestion search for Amazon CDN image
+                if (!posterUrl || posterUrl.includes('metahub.space')) {
+                    try {
+                        const sugRes = await fetch(`${App.api.baseUrl}/search?query=${encodeURIComponent(titleName)}`);
+                        if (sugRes.ok) {
+                            const sugData = await sugRes.json();
+                            const match = (sugData.results || []).find(r => r.id === imdbId && (r.image_large || r.image));
+                            if (match) {
+                                posterUrl = match.image_large || match.image;
+                            }
+                        }
+                    } catch (_) {}
+                }
+            }
+        }
+
         const year = data?.year || data?.startYear || (data?.releaseDetailed?.year ?? '');
         const contentType = data?.contentType || data?.type || (data?.isSeries ? 'tvSeries' : 'movie');
         const isTv = Boolean(data?.isSeries || contentType === 'tvSeries' || contentType === 'tvMiniSeries' || contentType === 'tvMovie');
@@ -397,8 +431,10 @@ function renderDetailsPage(data) {
             </header>
 
             <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-10 md:gap-16 max-w-5xl w-full my-auto">
-                <div class="flex-shrink-0 w-44 sm:w-56 md:w-72 shadow-2xl rounded-2xl overflow-hidden border border-white/10 bg-gray-800 ring-1 ring-white/5">
-                    <img src="${poster || 'https://via.placeholder.com/300x450.png?text=No+Image'}" alt="${data.primaryTitle}" class="w-full h-auto object-cover block aspect-[2/3]" />
+                <div class="flex-shrink-0 w-44 sm:w-56 md:w-72 shadow-2xl rounded-2xl overflow-hidden border border-white/10 bg-gray-800 ring-1 ring-white/5 relative aspect-[2/3] flex items-center justify-center">
+                    <img src="${poster || 'assets/images/pflix.png'}" alt="${data.primaryTitle}" 
+                        onerror="if (!this.dataset.fallback) { this.dataset.fallback = '1'; this.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(this.src); } else { this.src = 'assets/images/pflix.png'; }"
+                        class="w-full h-full object-cover block" />
                 </div>
                 <div class="flex-1 max-w-xl text-center md:text-left flex flex-col items-center md:items-start">
                     <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2 text-xs">
