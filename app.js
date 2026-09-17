@@ -35,7 +35,7 @@ document.addEventListener('fullscreenchange', updateGlobalHomeBtn);
 const App = {
     elements: {},
     api: {
-        baseUrl: 'https://api.imdbapi.dev',
+        baseUrl: 'https://imdb-api.prabeshtechnologies.workers.dev',
     },
     timers: {
         searchDebounce: null,
@@ -49,6 +49,12 @@ const App = {
         'tt0903747', // Breaking Bad
         'tt4154796', // Avengers: Endgame
         'tt7286456', // Joker
+        'tt15398776', // Oppenheimer
+        'tt1190634', // The Boys
+        'tt1877830', // The Batman
+        'tt4574334', // Stranger Things
+        'tt1517268', // Barbie
+        'tt11198330', // House of the Dragon
     ],
 };
 
@@ -80,10 +86,28 @@ async function search(query) {
     
     document.getElementById('results-spinner').style.display = 'flex';
     try {
-        const response = await fetch(`${App.api.baseUrl}/search/titles?query=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-        const data = await response.json();
-        renderSearchResults(data.titles || []);
+        let results = [];
+        // First try the new worker API search endpoint: /search?query=...
+        try {
+            const response = await fetch(`${App.api.baseUrl}/search?query=${encodeURIComponent(query)}`);
+            if (response.ok) {
+                const data = await response.json();
+                results = data.results || data.titles || [];
+            }
+        } catch (_) {}
+
+        // Fallback to legacy endpoint if no results returned yet
+        if (!results || results.length === 0) {
+            try {
+                const fallbackResponse = await fetch(`${App.api.baseUrl}/search/titles?query=${encodeURIComponent(query)}`);
+                if (fallbackResponse.ok) {
+                    const data = await fallbackResponse.json();
+                    results = data.results || data.titles || [];
+                }
+            } catch (_) {}
+        }
+
+        renderSearchResults(results || []);
         document.getElementById('results-spinner').style.display = 'none';
     } catch (error) {
         console.error("Error fetching search results:", error);
@@ -99,11 +123,10 @@ function renderSearchResults(titles) {
     showSearchView();
     document.getElementById('results-spinner').style.display = 'none';
     App.elements.searchResults.innerHTML = '';
-    if (titles.length === 0) {
-        if (App.elements.searchInput.value.length > 2) {
+    if (!titles || titles.length === 0) {
+        if (App.elements.searchInput.value.length > 1) {
             App.elements.searchResults.innerHTML = `<p class="col-span-full text-center text-gray-400 mt-8">No results found for "${App.elements.searchInput.value}"</p>`;
         }
-        // Always hide spinner even if no results
         document.getElementById('results-spinner').style.display = 'none';
         return;
     }
@@ -113,29 +136,23 @@ function renderSearchResults(titles) {
         item.className = 'bg-gray-800/90 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col w-40 sm:w-48 h-64 sm:h-80';
         item.addEventListener('click', () => navigateTo(title.id));
 
-        const imageUrl = title.primaryImage?.url || 'https://via.placeholder.com/300x450.png?text=No+Image';
-        const typeIcon = title.type === 'tvSeries' || title.type === 'tvMiniSeries'
+        const titleName = title.title || title.primaryTitle || 'Unknown Title';
+        const year = title.year || title.startYear || '';
+        const imageUrl = title.image || title.image_large || title.primaryImage?.url || 'https://via.placeholder.com/300x450.png?text=No+Image';
+        const isTv = title.type === 'tvSeries' || title.type === 'tvMiniSeries' || title.type === 'tvMovie';
+        const typeIcon = isTv
             ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
             : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
 
         item.innerHTML = `
-            <div class="aspect-[2/3] w-full bg-gray-700 overflow-hidden">${imageUrl ? `<img src="${imageUrl}" alt="${title.primaryTitle}" class="w-full h-full object-cover" />` : ''}</div>
+            <div class="aspect-[2/3] w-full bg-gray-700 overflow-hidden">${imageUrl ? `<img src="${imageUrl}" alt="${titleName}" class="w-full h-full object-cover" />` : ''}</div>
             <div class="p-3 flex flex-col justify-between flex-1"> 
-                <div class="font-semibold text-sm leading-tight flex items-start">${typeIcon}<span class="line-clamp-2">${title.primaryTitle}</span></div>
-                <div class="text-xs text-gray-400 mt-2">${title.startYear || ''}</div>
+                <div class="font-semibold text-sm leading-tight flex items-start">${typeIcon}<span class="line-clamp-2">${titleName}</span></div>
+                <div class="text-xs text-gray-400 mt-2">${year}</div>
             </div>`;
         App.elements.searchResults.appendChild(item);
     });
-// Home button listeners for all main sections
-document.getElementById('explore-home-btn')?.addEventListener('click', () => {
-    showSection('search');
-});
-document.getElementById('results-home-btn')?.addEventListener('click', () => {
-    showSection('search');
-});
-document.getElementById('details-home-btn')?.addEventListener('click', () => {
-    showSection('search');
-});
+
     // Always hide spinner after rendering results
     document.getElementById('results-spinner').style.display = 'none';
 }
@@ -239,21 +256,91 @@ function showHomeView() {
  */
 async function fetchMediaData(imdbId, playOnLoad) {
     try {
-        const response = await fetch(`${App.api.baseUrl}/titles/${imdbId}`);
-        if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-        const data = await response.json();
+        let data = null;
+        // 1. Try new API endpoint: /title/{id}
+        try {
+            const response = await fetch(`${App.api.baseUrl}/title/${imdbId}`);
+            if (response.ok) {
+                data = await response.json();
+            }
+        } catch (_) {}
+
+        // 2. Fallback to /titles/{id} if needed
+        if (!data || data.message || !data.id) {
+            try {
+                const responseOld = await fetch(`${App.api.baseUrl}/titles/${imdbId}`);
+                if (responseOld.ok) {
+                    data = await responseOld.json();
+                }
+            } catch (_) {}
+        }
+
+        // 3. Fallback: if details fetch fails, try /search?query={id} to at least get basic info
+        if (!data || data.message || !data.id) {
+            try {
+                const sRes = await fetch(`${App.api.baseUrl}/search?query=${encodeURIComponent(imdbId)}`);
+                if (sRes.ok) {
+                    const sData = await sRes.json();
+                    const found = (sData.results || sData.titles || []).find(x => x.id === imdbId);
+                    if (found) {
+                        data = {
+                            id: imdbId,
+                            title: found.title || found.primaryTitle,
+                            image: found.image || found.image_large,
+                            year: found.year || found.startYear,
+                            type: found.type,
+                            isSeries: found.type === 'tvSeries' || found.type === 'tvMiniSeries',
+                        };
+                    }
+                }
+            } catch (_) {}
+        }
+
+        // Normalize data across APIs
+        const titleName = data?.title || data?.primaryTitle || data?.name || imdbId;
+        const posterUrl = data?.image || data?.image_large || data?.primaryImage?.url || data?.images?.[0] || '';
+        const year = data?.year || data?.startYear || (data?.releaseDetailed?.year ?? '');
+        const contentType = data?.contentType || data?.type || (data?.isSeries ? 'tvSeries' : 'movie');
+        const isTv = Boolean(data?.isSeries || contentType === 'tvSeries' || contentType === 'tvMiniSeries' || contentType === 'tvMovie');
+        const plot = typeof data?.plot === 'string' ? data.plot : (data?.plot?.plotText?.plainText || 'No plot available.');
+        const ratingVal = data?.rating?.star ?? data?.rating?.aggregateRating ?? null;
+        const ratingVotes = data?.rating?.count ?? data?.rating?.voteCount ?? 0;
+        const runtimeSeconds = data?.runtimeSeconds ?? 0;
+
+        const normalizedData = {
+            id: imdbId,
+            primaryTitle: titleName,
+            title: titleName,
+            startYear: year,
+            year: year,
+            endYear: data?.endYear || '',
+            type: contentType,
+            contentType: contentType,
+            isTv: isTv,
+            isSeries: isTv,
+            primaryImage: { url: posterUrl },
+            image: posterUrl,
+            images: data?.images || [],
+            plot: plot,
+            runtimeSeconds: runtimeSeconds,
+            runtime: data?.runtime || (runtimeSeconds ? `${Math.floor(runtimeSeconds / 60)}m` : ''),
+            rating: ratingVal ? { aggregateRating: ratingVal, voteCount: ratingVotes } : null,
+            all_seasons: data?.all_seasons || [],
+            seasons: data?.seasons || [],
+            details: data || {},
+        };
 
         App.currentMedia = {
-            id: data.id,
-            isTv: data.type === 'tvSeries' || data.type === 'tvMiniSeries',
+            id: imdbId,
+            isTv: isTv,
             seasons: {},
-            details: data,
+            details: normalizedData,
         };
 
         if (playOnLoad) {
-            renderPlayerPage(data);
+            renderPlayerPage(normalizedData);
         } else {
-            renderDetailsPage(data);
+            renderDetailsPage(normalizedData);
         }
     } catch (error) {
         console.error("Error fetching media data:", error);
@@ -271,29 +358,31 @@ function renderDetailsPage(data) {
     url.searchParams.delete('view');
     url.searchParams.delete('q');
     window.history.pushState({ imdbId: data.id }, '', url);
-    document.title = `${data.primaryTitle} (${data.startYear}) - Pflix`;
+    document.title = `${data.primaryTitle}${data.startYear ? ` (${data.startYear})` : ''} - Pflix`;
 
     const ratingsHTML = data.rating ? `
         <div class="flex items-center space-x-2">
             <svg class="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
             <div>
                 <p class="text-lg font-bold text-white">${data.rating.aggregateRating}/10</p>
-                <p class="text-xs text-gray-400">${data.rating.voteCount.toLocaleString()} votes</p>
+                <p class="text-xs text-gray-400">${Number(data.rating.voteCount).toLocaleString()} votes</p>
             </div>
         </div>` : '';
 
+    const poster = data.primaryImage?.url || data.image || '';
+
     App.elements.watchPageContainer.innerHTML = `
         <div class="fixed inset-0 w-full h-full overflow-auto">
-            <div class="absolute inset-0 bg-cover bg-center scale-110" style="background-image: url(${data.primaryImage?.url || ''})"></div>
+            <div class="absolute inset-0 bg-cover bg-center scale-110" style="background-image: url(${poster})"></div>
             <div class="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
             <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-8 md:gap-12 p-4 sm:p-8 min-h-screen w-full">
-                <img src="${data.primaryImage?.url || ''}" alt="Poster" class="w-40 sm:w-64 md:w-80 rounded-lg shadow-2xl">
+                <img src="${poster || 'https://via.placeholder.com/300x450.png?text=No+Image'}" alt="Poster" class="w-40 sm:w-64 md:w-80 rounded-lg shadow-2xl object-cover">
                 <div class="max-w-2xl w-full text-center md:text-left">
                     <h1 class="text-2xl sm:text-4xl md:text-6xl font-bold text-white">${data.primaryTitle}</h1>
                     <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-4 my-2 sm:my-4 text-gray-300">
-                        <span>${data.startYear}</span>${data.endYear ? `<span>- ${data.endYear}</span>` : ''}
-                        ${data.runtimeSeconds ? `<span>• ${Math.floor(data.runtimeSeconds / 60)}m</span>` : ''}
-                        <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-md capitalize">${data.type}</span>
+                        ${data.startYear ? `<span>${data.startYear}</span>` : ''}${data.endYear ? `<span>- ${data.endYear}</span>` : ''}
+                        ${data.runtime ? `<span>• ${data.runtime}</span>` : (data.runtimeSeconds ? `<span>• ${Math.floor(data.runtimeSeconds / 60)}m</span>` : '')}
+                        <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-md capitalize">${data.type || 'Movie'}</span>
                     </div>
                     <p class="my-2 sm:my-4 text-gray-200 leading-relaxed">${data.plot || 'No plot available.'}</p>
                     <div class="flex flex-wrap justify-center md:justify-start items-center gap-4 sm:gap-6 my-2 sm:my-4">
@@ -348,7 +437,6 @@ function renderPlayerPage(data) {
                 <div id="stream-buttons" class="flex flex-col gap-1 sm:gap-2"></div>
             </aside>
         </div>`;
-    // Remove redundant home button listener - using global home button instead
 
     if (App.currentMedia.isTv) {
         if (Object.keys(App.currentMedia.seasons).length > 0) {
@@ -371,23 +459,78 @@ function renderPlayerPage(data) {
  */
 async function fetchEpisodes() {
     try {
-        const response = await fetch(`${App.api.baseUrl}/titles/${App.currentMedia.id}/episodes`);
-        if (!response.ok) throw new Error('Failed to load episode data.');
-        const data = await response.json();
-        const episodes = data.episodes || [];
+        let seasonsObj = {};
+        const details = App.currentMedia.details || {};
 
-        // API uses `season` (string). Normalize and ensure we have `seasonNumber` and `primaryTitle`.
-        App.currentMedia.seasons = episodes.reduce((acc, ep) => {
-            const rawSeason = ep.season ?? ep.seasonNumber ?? '1';
-            const seasonKey = String(rawSeason);
-            if (!acc[seasonKey]) acc[seasonKey] = [];
-            acc[seasonKey].push({
-                ...ep,
-                seasonNumber: Number(rawSeason) || 1,
-                primaryTitle: ep.primaryTitle || ep.title || `Episode ${ep.episodeNumber}`,
+        // 1. Check if all_seasons was provided by title details
+        if (Array.isArray(details.all_seasons) && details.all_seasons.length > 0) {
+            details.all_seasons.forEach(s => {
+                const sKey = String(s.id || s.value || s);
+                if (!seasonsObj[sKey]) seasonsObj[sKey] = [];
             });
-            return acc;
-        }, {});
+            // First season episodes might already be attached
+            if (Array.isArray(details.seasons?.[0]?.episodes)) {
+                seasonsObj['1'] = details.seasons[0].episodes.map((ep, i) => ({
+                    episodeNumber: Number(ep.no || ep.idx || (i + 1)),
+                    seasonNumber: 1,
+                    primaryTitle: ep.title || `Episode ${ep.no || (i + 1)}`,
+                }));
+            }
+        }
+
+        // 2. If season 1 episodes aren't populated yet, fetch season 1 from /title/{id}/season/1
+        if (!seasonsObj['1'] || seasonsObj['1'].length === 0) {
+            try {
+                const s1Res = await fetch(`${App.api.baseUrl}/title/${App.currentMedia.id}/season/1`);
+                if (s1Res.ok) {
+                    const s1Data = await s1Res.json();
+                    if (Array.isArray(s1Data.all_seasons)) {
+                        s1Data.all_seasons.forEach(s => {
+                            const sKey = String(s.id || s.value || s);
+                            if (!seasonsObj[sKey]) seasonsObj[sKey] = [];
+                        });
+                    }
+                    if (Array.isArray(s1Data.episodes)) {
+                        seasonsObj['1'] = s1Data.episodes.map((ep, i) => ({
+                            episodeNumber: Number(ep.no || ep.idx || (i + 1)),
+                            seasonNumber: 1,
+                            primaryTitle: ep.title || `Episode ${ep.no || (i + 1)}`,
+                        }));
+                    }
+                }
+            } catch (_) {}
+        }
+
+        // 3. Fallback: try old /titles/{id}/episodes route
+        if (Object.keys(seasonsObj).length === 0 || !seasonsObj['1'] || seasonsObj['1'].length === 0) {
+            try {
+                const oldEpRes = await fetch(`${App.api.baseUrl}/titles/${App.currentMedia.id}/episodes`);
+                if (oldEpRes.ok) {
+                    const oldEpData = await oldEpRes.json();
+                    const episodes = oldEpData.episodes || [];
+                    seasonsObj = episodes.reduce((acc, ep) => {
+                        const rawSeason = ep.season ?? ep.seasonNumber ?? '1';
+                        const seasonKey = String(rawSeason);
+                        if (!acc[seasonKey]) acc[seasonKey] = [];
+                        acc[seasonKey].push({
+                            ...ep,
+                            seasonNumber: Number(rawSeason) || 1,
+                            primaryTitle: ep.primaryTitle || ep.title || `Episode ${ep.episodeNumber}`,
+                        });
+                        return acc;
+                    }, {});
+                }
+            } catch (_) {}
+        }
+
+        // 4. Default fallback: at least have Season 1 Episode 1
+        if (Object.keys(seasonsObj).length === 0) {
+            seasonsObj['1'] = [{ episodeNumber: 1, seasonNumber: 1, primaryTitle: 'Episode 1' }];
+        } else if (!seasonsObj['1'] || seasonsObj['1'].length === 0) {
+            seasonsObj['1'] = [{ episodeNumber: 1, seasonNumber: 1, primaryTitle: 'Episode 1' }];
+        }
+
+        App.currentMedia.seasons = seasonsObj;
         Object.values(App.currentMedia.seasons).forEach(s => s.sort((a,b) => a.episodeNumber - b.episodeNumber));
 
         renderEpisodeSelectors();
@@ -398,6 +541,7 @@ async function fetchEpisodes() {
     } catch (error) {
         console.error("Error fetching episodes:", error);
         document.getElementById('episode-selector-container').innerHTML = `<p class="text-red-400 text-sm">Could not load episodes. Defaulting to S01E01.</p>`;
+        App.currentMedia.seasons = { '1': [{ episodeNumber: 1, seasonNumber: 1, primaryTitle: 'Episode 1' }] };
         renderServerButtons();
         const firstProviderId = Object.keys(STREAMING_PROVIDERS).find(id => STREAMING_PROVIDERS[id].supports.includes('tv'));
         if (firstProviderId) {
@@ -435,15 +579,39 @@ function renderEpisodeSelectors() {
         seasonSelect.add(option);
     });
 
-    const updateEpisodes = () => {
-    const selectedSeason = App.currentMedia.seasons[seasonSelect.value] || [];
+    const updateEpisodes = async () => {
+        const sVal = seasonSelect.value;
+        let selectedSeason = App.currentMedia.seasons[sVal] || [];
+
+        // If this season's episodes haven't been fetched yet, fetch them from the worker API
+        if (selectedSeason.length === 0) {
+            try {
+                const res = await fetch(`${App.api.baseUrl}/title/${App.currentMedia.id}/season/${sVal}`);
+                if (res.ok) {
+                    const sData = await res.json();
+                    if (Array.isArray(sData.episodes) && sData.episodes.length > 0) {
+                        selectedSeason = sData.episodes.map((ep, i) => ({
+                            episodeNumber: Number(ep.no || ep.idx || (i + 1)),
+                            seasonNumber: Number(sVal),
+                            primaryTitle: ep.title || `Episode ${ep.no || (i + 1)}`,
+                        }));
+                        App.currentMedia.seasons[sVal] = selectedSeason;
+                    }
+                }
+            } catch (_) {}
+        }
+
+        if (selectedSeason.length === 0) {
+            selectedSeason = [{ episodeNumber: 1, seasonNumber: Number(sVal), primaryTitle: 'Episode 1' }];
+        }
+
         episodeSelect.innerHTML = '';
         selectedSeason.forEach(ep => {
             const option = new Option(`E${ep.episodeNumber}: ${ep.primaryTitle}`, ep.episodeNumber);
             episodeSelect.add(option);
         });
         updateStreamSource();
-    }
+    };
 
     seasonSelect.addEventListener('change', updateEpisodes);
     episodeSelect.addEventListener('change', updateStreamSource);
@@ -656,6 +824,17 @@ document.getElementById('explore-btn')?.addEventListener('click', () => {
     loadFeatured();
 });
 
+// Section return to home buttons
+document.getElementById('explore-home-btn')?.addEventListener('click', () => {
+    showSection('search');
+});
+document.getElementById('results-home-btn')?.addEventListener('click', () => {
+    showSection('search');
+});
+document.getElementById('details-home-btn')?.addEventListener('click', () => {
+    showSection('search');
+});
+
 // Central search form: prevent default submit
 document.getElementById('main-search-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -714,65 +893,101 @@ function showContentView() {
 }
 
 /**
- * Load featured cards on the home hero
+ * Renders an array of featured card objects to the featured grid
+ */
+function renderFeaturedGrid(list) {
+    if (!App.elements.featuredGrid) return;
+    App.elements.featuredGrid.innerHTML = '';
+    list.forEach((c) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'text-left bg-gray-800/90 hover:bg-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/30 transition-all flex flex-col w-48 h-80';
+        const isTv = c.type === 'tvSeries' || c.type === 'tvMiniSeries';
+        const typeIcon = isTv
+            ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
+            : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
+        const posterUrl = c.img || c.image || c.image_large || '';
+        card.innerHTML = `
+            <div class="h-64 w-full bg-gray-700 overflow-hidden">${posterUrl ? `<img src="${posterUrl}" alt="${c.title}" class="w-full h-full object-cover" />` : '<div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No Image</div>'}</div>
+            <div class="p-3 flex flex-col justify-between flex-1"> 
+                <div class="font-semibold text-sm leading-tight flex items-start line-clamp-2">${typeIcon}<span class="line-clamp-2">${c.title}</span></div>
+                <div class="text-xs text-gray-400 mt-2">${c.year || ''}</div>
+            </div>`;
+        card.addEventListener('click', () => navigateTo(c.id, false));
+        App.elements.featuredGrid.appendChild(card);
+    });
+}
+
+/**
+ * Load featured cards on the home hero / explore view
  */
 async function loadFeatured() {
     if (!App.elements.featuredGrid) return;
     App.elements.featuredGrid.innerHTML = '';
-    document.getElementById('explore-spinner').style.display = 'flex';
+    const spinner = document.getElementById('explore-spinner');
+    if (spinner) spinner.style.display = 'flex';
+
+    const defaultFeatured = [
+        { id: 'tt1375666', title: 'Inception', year: '2010', type: 'movie' },
+        { id: 'tt0816692', title: 'Interstellar', year: '2014', type: 'movie' },
+        { id: 'tt0944947', title: 'Game of Thrones', year: '2011', type: 'tvSeries' },
+        { id: 'tt0903747', title: 'Breaking Bad', year: '2008', type: 'tvSeries' },
+        { id: 'tt4154796', title: 'Avengers: Endgame', year: '2019', type: 'movie' },
+        { id: 'tt7286456', title: 'Joker', year: '2019', type: 'movie' },
+        { id: 'tt15398776', title: 'Oppenheimer', year: '2023', type: 'movie' },
+        { id: 'tt1190634', title: 'The Boys', year: '2019', type: 'tvSeries' },
+        { id: 'tt1877830', title: 'The Batman', year: '2022', type: 'movie' },
+        { id: 'tt4574334', title: 'Stranger Things', year: '2016', type: 'tvSeries' },
+        { id: 'tt1517268', title: 'Barbie', year: '2023', type: 'movie' },
+        { id: 'tt11198330', title: 'House of the Dragon', year: '2022', type: 'tvSeries' }
+    ];
+
     try {
-        const res = await fetch(`${App.api.baseUrl}/titles`);
-        if (!res.ok) throw new Error('Failed to load featured');
-        const data = await res.json();
-        const list = (data.titles || []).slice(0, 12).map(d => ({
-            id: d.id,
-            title: d.primaryTitle,
-            year: d.startYear,
-            img: d.primaryImage?.url,
-            type: d.type,
-        }));
-        list.forEach((c) => {
-            const card = document.createElement('button');
-            card.type = 'button';
-            card.className = 'text-left bg-gray-800/90 hover:bg-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/30 transition-all flex flex-col w-48 h-80';
-            const typeIcon = c.type === 'tvSeries' || c.type === 'tvMiniSeries'
-                ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
-                : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
-            card.innerHTML = `
-                <div class="h-64 w-full bg-gray-700 overflow-hidden">${c.img ? `<img src="${c.img}" alt="${c.title}" class="w-full h-full object-cover" />` : ''}</div>
-                <div class="p-3 flex flex-col justify-between flex-1"> 
-                    <div class="font-semibold text-sm leading-tight flex items-start line-clamp-2">${typeIcon}<span class="line-clamp-2">${c.title}</span></div>
-                    <div class="text-xs text-gray-400 mt-2">${c.year || ''}</div>
-                </div>`;
-            card.addEventListener('click', () => navigateTo(c.id, false));
-            App.elements.featuredGrid.appendChild(card);
-        });
-        document.getElementById('explore-spinner').style.display = 'none';
+        const results = await Promise.allSettled(
+            defaultFeatured.map(async (item) => {
+                // Query worker API search endpoint for fast poster and title retrieval
+                try {
+                    const sRes = await fetch(`${App.api.baseUrl}/search?query=${encodeURIComponent(item.title)}`);
+                    if (sRes.ok) {
+                        const sData = await sRes.json();
+                        const found = (sData.results || sData.titles || []).find(x => x.id === item.id) || (sData.results || sData.titles || [])[0];
+                        if (found) {
+                            return {
+                                id: found.id || item.id,
+                                title: found.title || found.primaryTitle || item.title,
+                                year: found.year || found.startYear || item.year,
+                                img: found.image || found.image_large || found.primaryImage?.url || '',
+                                type: found.type || item.type,
+                            };
+                        }
+                    }
+                } catch (_) {}
+
+                // Secondary try: /title/{id}
+                try {
+                    const tRes = await fetch(`${App.api.baseUrl}/title/${item.id}`);
+                    if (tRes.ok) {
+                        const tData = await tRes.json();
+                        return {
+                            id: tData.id || item.id,
+                            title: tData.title || tData.primaryTitle || item.title,
+                            year: tData.year || tData.startYear || item.year,
+                            img: tData.image || tData.primaryImage?.url || '',
+                            type: tData.contentType || tData.type || item.type,
+                        };
+                    }
+                } catch (_) {}
+
+                return item;
+            })
+        );
+
+        const list = results.map((r, i) => r.status === 'fulfilled' ? r.value : defaultFeatured[i]);
+        renderFeaturedGrid(list);
     } catch (e) {
-        console.warn('Featured load failed, falling back to static IDs', e);
-        const ids = App.featured.slice(0, 12);
-        for (const id of ids) {
-            try {
-                const r = await fetch(`${App.api.baseUrl}/titles/${id}`);
-                if (!r.ok) continue;
-                const d = await r.json();
-                const c = { id: d.id, title: d.primaryTitle, year: d.startYear, img: d.primaryImage?.url, type: d.type };
-                const card = document.createElement('button');
-                card.type = 'button';
-                card.className = 'text-left bg-gray-800/90 hover:bg-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/30 transition-all flex flex-col w-48 h-80';
-                const typeIcon = c.type === 'tvSeries' || c.type === 'tvMiniSeries'
-                    ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
-                    : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
-                card.innerHTML = `
-                    <div class="h-64 w-full bg-gray-700 overflow-hidden">${c.img ? `<img src="${c.img}" alt="${c.title}" class="w-full h-full object-cover" />` : ''}</div>
-                    <div class="p-3 flex flex-col justify-between flex-1">
-                        <div class="font-semibold text-sm leading-tight flex items-start line-clamp-2">${typeIcon}<span class="line-clamp-2">${c.title}</span></div>
-                        <div class="text-xs text-gray-400 mt-2">${c.year || ''}</div>
-                    </div>`;
-                card.addEventListener('click', () => navigateTo(c.id, false));
-                App.elements.featuredGrid.appendChild(card);
-            } catch {}
-        }
-        document.getElementById('explore-spinner').style.display = 'none';
+        console.warn('Featured load failed, using fallbacks', e);
+        renderFeaturedGrid(defaultFeatured);
+    } finally {
+        if (spinner) spinner.style.display = 'none';
     }
 }
