@@ -132,28 +132,35 @@ function renderSearchResults(titles) {
     }
     titles.forEach(title => {
         const item = document.createElement('div');
-        // Portrait aspect ratio for all devices
-        item.className = 'bg-gray-800/90 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col w-40 sm:w-48 h-64 sm:h-80';
+        item.className = 'movie-card bg-gray-800/90 border border-white/5 rounded-xl overflow-hidden shadow-lg cursor-pointer flex flex-col w-36 sm:w-48 h-64 sm:h-80 group relative';
         item.addEventListener('click', () => navigateTo(title.id));
 
         const titleName = title.title || title.primaryTitle || 'Unknown Title';
         const year = title.year || title.startYear || '';
-        const imageUrl = title.image || title.image_large || title.primaryImage?.url || 'https://via.placeholder.com/300x450.png?text=No+Image';
+        const imageUrl = title.image || title.image_large || title.primaryImage?.url || '';
         const isTv = title.type === 'tvSeries' || title.type === 'tvMiniSeries' || title.type === 'tvMovie';
-        const typeIcon = isTv
-            ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
-            : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
+        const typeLabel = isTv ? 'TV' : 'Movie';
 
         item.innerHTML = `
-            <div class="aspect-[2/3] w-full bg-gray-700 overflow-hidden">${imageUrl ? `<img src="${imageUrl}" alt="${titleName}" class="w-full h-full object-cover" />` : ''}</div>
-            <div class="p-3 flex flex-col justify-between flex-1"> 
-                <div class="font-semibold text-sm leading-tight flex items-start">${typeIcon}<span class="line-clamp-2">${titleName}</span></div>
-                <div class="text-xs text-gray-400 mt-2">${year}</div>
+            <div class="aspect-[2/3] w-full bg-gray-900 overflow-hidden relative">
+                ${imageUrl ? `<img src="${imageUrl}" alt="${titleName}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />` : `<div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No Image</div>`}
+                <span class="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-md text-gray-200 uppercase tracking-wider">${typeLabel}</span>
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                        <svg class="w-5 h-5 fill-current translate-x-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="p-2.5 sm:p-3 flex flex-col justify-between flex-1 bg-gray-800/95"> 
+                <div class="font-semibold text-xs sm:text-sm leading-tight line-clamp-2 text-gray-100 group-hover:text-red-400 transition-colors">${titleName}</div>
+                <div class="text-[11px] sm:text-xs text-gray-400 mt-1 sm:mt-2 flex items-center justify-between">
+                    <span>${year}</span>
+                    <span class="text-[11px] text-red-400 font-medium">Watch →</span>
+                </div>
             </div>`;
         App.elements.searchResults.appendChild(item);
     });
 
-    // Always hide spinner after rendering results
     document.getElementById('results-spinner').style.display = 'none';
 }
 
@@ -352,7 +359,6 @@ async function fetchMediaData(imdbId, playOnLoad) {
  * Renders the details page, showing info and a play button.
  */
 function renderDetailsPage(data) {
-    // Update URL and page title
     const url = new URL(window.location);
     url.searchParams.set('id', data.id);
     url.searchParams.delete('view');
@@ -362,36 +368,44 @@ function renderDetailsPage(data) {
 
     const ratingsHTML = data.rating ? `
         <div class="flex items-center space-x-2">
-            <svg class="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
             <div>
-                <p class="text-lg font-bold text-white">${data.rating.aggregateRating}/10</p>
-                <p class="text-xs text-gray-400">${Number(data.rating.voteCount).toLocaleString()} votes</p>
+                <span class="text-base font-bold text-white">${data.rating.aggregateRating}/10</span>
+                <span class="text-xs text-gray-400 ml-1">(${Number(data.rating.voteCount).toLocaleString()} votes)</span>
             </div>
         </div>` : '';
 
     const poster = data.primaryImage?.url || data.image || '';
 
     App.elements.watchPageContainer.innerHTML = `
-        <div class="fixed inset-0 w-full h-full overflow-auto">
-            <div class="absolute inset-0 bg-cover bg-center scale-110" style="background-image: url(${poster})"></div>
-            <div class="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
-            <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-8 md:gap-12 p-4 sm:p-8 min-h-screen w-full">
-                <img src="${poster || 'https://via.placeholder.com/300x450.png?text=No+Image'}" alt="Poster" class="w-40 sm:w-64 md:w-80 rounded-lg shadow-2xl object-cover">
-                <div class="max-w-2xl w-full text-center md:text-left">
-                    <h1 class="text-2xl sm:text-4xl md:text-6xl font-bold text-white">${data.primaryTitle}</h1>
-                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-4 my-2 sm:my-4 text-gray-300">
-                        ${data.startYear ? `<span>${data.startYear}</span>` : ''}${data.endYear ? `<span>- ${data.endYear}</span>` : ''}
-                        ${data.runtime ? `<span>• ${data.runtime}</span>` : (data.runtimeSeconds ? `<span>• ${Math.floor(data.runtimeSeconds / 60)}m</span>` : '')}
-                        <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-md capitalize">${data.type || 'Movie'}</span>
+        <div class="relative w-full flex-1 flex items-center justify-center overflow-hidden py-8 px-4 sm:px-8">
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="w-full h-full bg-cover bg-center blur-3xl scale-110 opacity-25" style="background-image: url(${poster})"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/90 to-gray-900/70"></div>
+            </div>
+            <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-10 md:gap-16 max-w-5xl w-full my-auto">
+                <div class="flex-shrink-0 w-44 sm:w-56 md:w-72 shadow-2xl rounded-2xl overflow-hidden border border-white/10 bg-gray-800">
+                    <img src="${poster || 'https://via.placeholder.com/300x450.png?text=No+Image'}" alt="${data.primaryTitle}" class="w-full h-auto object-cover block aspect-[2/3]" />
+                </div>
+                <div class="flex-1 max-w-xl text-center md:text-left flex flex-col items-center md:items-start">
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2 text-xs">
+                        <span class="bg-red-600/90 text-white font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">${data.type || 'Movie'}</span>
+                        ${data.startYear ? `<span class="text-gray-300 bg-white/10 px-2 py-0.5 rounded-full">${data.startYear}${data.endYear ? ` - ${data.endYear}` : ''}</span>` : ''}
+                        ${data.runtime ? `<span class="text-gray-400">• ${data.runtime}</span>` : (data.runtimeSeconds ? `<span class="text-gray-400">• ${Math.floor(data.runtimeSeconds / 60)}m</span>` : '')}
                     </div>
-                    <p class="my-2 sm:my-4 text-gray-200 leading-relaxed">${data.plot || 'No plot available.'}</p>
-                    <div class="flex flex-wrap justify-center md:justify-start items-center gap-4 sm:gap-6 my-2 sm:my-4">
-                        ${ratingsHTML}
+                    <h1 class="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-3 leading-tight">${data.primaryTitle}</h1>
+                    <p class="text-sm sm:text-base text-gray-300 leading-relaxed mb-4 line-clamp-4 md:line-clamp-none">${data.plot || 'No plot available.'}</p>
+                    ${ratingsHTML ? `<div class="mb-5">${ratingsHTML}</div>` : ''}
+                    <div class="flex flex-wrap items-center gap-3 mt-1">
+                        <button id="play-button" type="button" class="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-2.5 sm:py-3 px-6 sm:px-8 rounded-full text-base shadow-xl shadow-red-600/30 transition-all hover:scale-105 cursor-pointer">
+                            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            <span>Play Now</span>
+                        </button>
+                        <button id="details-back-btn" type="button" class="inline-flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium py-2.5 sm:py-3 px-5 rounded-full text-sm border border-white/10 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            <span>Back</span>
+                        </button>
                     </div>
-                    <button id="play-button" class="mt-4 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-8 rounded-full text-base sm:text-lg transition-transform hover:scale-105 w-full sm:w-auto">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        Play
-                    </button>
                 </div>
             </div>
         </div>
@@ -399,6 +413,14 @@ function renderDetailsPage(data) {
 
     document.getElementById('play-button').addEventListener('click', () => {
         navigateTo(data.id, true);
+    });
+
+    document.getElementById('details-back-btn')?.addEventListener('click', () => {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            showHomeView();
+        }
     });
 }
 
@@ -414,37 +436,61 @@ function renderPlayerPage(data) {
     document.title = `${data.primaryTitle} - Now Playing - Pflix`;
     
     App.elements.watchPageContainer.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-8 h-full overflow-auto">
-            <div class="lg:col-span-3 flex flex-col h-full">
-                <div id="stream-player-section" class="w-full bg-black rounded-lg overflow-hidden relative aspect-video shadow-2xl">
-                    <!-- Player iframe will be loaded here -->
-                </div>
-                <div class="flex flex-col items-center gap-2 mt-4">
-                    <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 sm:px-4 py-2 rounded-full shadow transition-all text-xs sm:text-base">
-                        <span>Donate me so my site keeps running</span>
-                        <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-5 sm:h-6 w-auto" />
-                    </a>
-                    <a href="https://getadblock.com/en/" target="_blank" class="flex items-center gap-2 mt-2 bg-white/10 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1 sm:py-2 hover:bg-white/20 transition-all">
-                        <img src="https://getadblock.com/images/updateAssets/core_logo_full.svg" alt="AdBlock" class="h-5 sm:h-6 w-5 sm:w-6" />
-                        <span class="text-gray-200 text-xs sm:text-sm font-medium">AdBlock can fix most issues with popups/ads</span>
-                    </a>
-                </div>
-            </div>
-            <aside class="lg:col-span-1 bg-gray-800 p-2 sm:p-4 rounded-lg shadow-lg flex flex-col gap-2 sm:gap-4">
-                <div id="episode-selector-container"></div>
-                <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <h2 class="text-base sm:text-xl font-bold flex items-center gap-2">
-                        <span>Servers</span>
-                        <span id="health-check-indicator" class="text-[10px] font-normal px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">testing...</span>
-                    </h2>
-                    <button id="recheck-health-btn" title="Re-check server latency" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        <span>Ping</span>
+        <div class="w-full max-w-7xl mx-auto p-2 sm:p-4 md:p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between py-1 border-b border-white/5 pb-2">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button id="player-back-btn" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        <span>Details</span>
                     </button>
+                    <h1 class="text-sm sm:text-base md:text-lg font-bold text-white truncate max-w-[200px] sm:max-w-md md:max-w-lg">${data.primaryTitle}</h1>
+                    ${data.startYear ? `<span class="text-xs text-gray-400 hidden sm:inline">(${data.startYear})</span>` : ''}
                 </div>
-                <div id="stream-buttons" class="flex flex-col gap-1 sm:gap-2"></div>
-            </aside>
+                <button id="player-home-btn" class="flex items-center gap-1 text-xs text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer">
+                    <img src="assets/images/home.svg" alt="Home" class="h-3.5 w-3.5" />
+                    <span>Home</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div class="lg:col-span-3 flex flex-col">
+                    <div id="stream-player-section" class="w-full bg-black rounded-xl overflow-hidden relative aspect-video shadow-2xl border border-white/10">
+                        <!-- Player iframe will be loaded here -->
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-white/5">
+                        <a href="https://getadblock.com/en/" target="_blank" rel="noopener" class="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-200 transition-colors">
+                            <img src="https://getadblock.com/images/updateAssets/core_logo_full.svg" alt="AdBlock" class="h-4 w-4" />
+                            <span>AdBlock is recommended for third-party embeds</span>
+                        </a>
+                        <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" rel="noopener" class="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 py-1 rounded-full text-xs transition-transform hover:scale-105">
+                            <span>Donate</span>
+                            <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-4 w-auto" />
+                        </a>
+                    </div>
+                </div>
+                <aside class="lg:col-span-1 bg-gray-800/80 border border-white/10 p-3 sm:p-4 rounded-xl shadow-xl flex flex-col gap-3">
+                    <div id="episode-selector-container"></div>
+                    <div class="flex items-center justify-between pb-1 border-b border-gray-700/60">
+                        <h2 class="text-sm sm:text-base font-bold flex items-center gap-2 text-white">
+                            <span>Servers</span>
+                            <span id="health-check-indicator" class="text-[10px] font-normal px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">testing...</span>
+                        </h2>
+                        <button id="recheck-health-btn" title="Re-check server latency" class="text-[11px] bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span>Ping</span>
+                        </button>
+                    </div>
+                    <div id="stream-buttons" class="flex flex-col gap-1.5 max-h-[460px] overflow-y-auto pr-1"></div>
+                </aside>
+            </div>
         </div>`;
+
+    document.getElementById('player-back-btn')?.addEventListener('click', () => {
+        navigateTo(data.id, false);
+    });
+
+    document.getElementById('player-home-btn')?.addEventListener('click', () => {
+        showHomeView();
+    });
 
     document.getElementById('recheck-health-btn')?.addEventListener('click', () => {
         runServerHealthChecks();
@@ -951,10 +997,102 @@ function init() {
             }
         }, 2000);
     };
-    App.elements.searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
+
+    const searchClearBtn = document.getElementById('search-clear-btn');
+    const updateClearBtn = () => {
+        if (searchClearBtn) {
+            if (App.elements.searchInput.value.length > 0) {
+                searchClearBtn.classList.remove('hidden');
+            } else {
+                searchClearBtn.classList.add('hidden');
+            }
+        }
+    };
+
+    App.elements.searchInput.addEventListener('input', (e) => {
+        updateClearBtn();
+        handleSearch(e.target.value);
+    });
+
+    searchClearBtn?.addEventListener('click', () => {
+        App.elements.searchInput.value = '';
+        updateClearBtn();
+        showHomeView();
+    });
+
+    // Wire up trending quick-search buttons
+    document.querySelectorAll('.trending-tag').forEach(tag => {
+        tag.addEventListener('click', (e) => {
+            const query = e.currentTarget.dataset.query;
+            if (query) {
+                App.elements.searchInput.value = query;
+                updateClearBtn();
+                showSection('results');
+                search(query);
+            }
+        });
+    });
+
+    // Wire up header navbar buttons
+    document.getElementById('nav-logo')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = new URL(window.location);
+        url.search = '';
+        window.history.pushState({}, '', url);
+        if (App.elements.searchInput) App.elements.searchInput.value = '';
+        updateClearBtn();
+        showHomeView();
+    });
+
+    document.getElementById('nav-home-btn')?.addEventListener('click', () => {
+        const url = new URL(window.location);
+        url.search = '';
+        window.history.pushState({}, '', url);
+        if (App.elements.searchInput) App.elements.searchInput.value = '';
+        updateClearBtn();
+        showHomeView();
+    });
+
+    document.getElementById('nav-explore-btn')?.addEventListener('click', () => {
+        const url = new URL(window.location);
+        url.searchParams.set('page', 'explore');
+        url.searchParams.delete('q');
+        url.searchParams.delete('id');
+        url.searchParams.delete('view');
+        window.history.pushState({ page: 'explore' }, '', url);
+        document.title = 'Featured Movies & TV Shows - Pflix';
+        showSection('explore');
+        loadFeatured();
+    });
+
+    document.getElementById('nav-about-btn')?.addEventListener('click', () => {
+        showSection('about');
+    });
+
+    // Global keyboard shortcuts: / focuses search, Esc exits modal/player
+    window.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement !== App.elements.searchInput && document.activeElement?.tagName !== 'INPUT') {
+            e.preventDefault();
+            App.elements.searchInput.focus();
+            App.elements.searchInput.select();
+        } else if (e.key === 'Escape') {
+            const aboutSection = document.getElementById('about-section');
+            if (aboutSection && !aboutSection.classList.contains('hidden')) {
+                showHomeView();
+            } else {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('view') === 'player') {
+                    const id = urlParams.get('id');
+                    if (id) navigateTo(id, false);
+                }
+            }
+        }
+    });
+
     if (App.elements.heroSearchInput) {
         App.elements.heroSearchInput.addEventListener('input', (e) => {
             App.elements.searchInput.value = e.target.value;
+            updateClearBtn();
             handleSearch(e.target.value);
         });
     }
@@ -963,11 +1101,10 @@ function init() {
         App.elements.logo.style.cursor = 'pointer';
         App.elements.logo.addEventListener('click', () => {
             const url = new URL(window.location);
-            url.searchParams.delete('id');
-            url.searchParams.delete('view');
+            url.search = '';
             window.history.pushState({}, '', url);
             if (App.elements.searchInput) App.elements.searchInput.value = '';
-            if (App.elements.heroSearchInput) App.elements.heroSearchInput.value = '';
+            updateClearBtn();
             if (App.elements.homeHero) showHomeView(); else showSearchView();
         });
     }
@@ -979,7 +1116,6 @@ function init() {
         if (imdbId) {
             navigateTo(imdbId, play);
         } else {
-            // No media selected: show homepage (search section) without results spinner
             showSection('search');
         }
     };
@@ -995,12 +1131,12 @@ function init() {
         navigateTo(imdbId, play);
     } else if (query) {
         App.elements.searchInput.value = query;
+        updateClearBtn();
         search(query);
     } else if (page === 'explore') {
         showSection('explore');
         loadFeatured();
     } else {
-        // Default to homepage (search section). Do not show results on initial load.
         showSection('search');
         document.title = 'Pflix - Find where to stream any movie or TV show';
     }
@@ -1090,6 +1226,15 @@ function showSection(section) {
         sections.details?.classList.add('flex', 'fade-in');
         sections.details?.classList.remove('fade-out');
     }
+    // Toggle footer visibility so details/player doesn't get pushed into unnecessary scroll
+    const footer = document.getElementById('site-footer');
+    if (footer) {
+        if (section === 'details') {
+            footer.classList.add('hidden');
+        } else {
+            footer.classList.remove('hidden');
+        }
+    }
     // Update the global home button visibility after any section change
     updateGlobalHomeBtn();
 }
@@ -1112,19 +1257,28 @@ function renderFeaturedGrid(list) {
     if (!App.elements.featuredGrid) return;
     App.elements.featuredGrid.innerHTML = '';
     list.forEach((c) => {
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = 'text-left bg-gray-800/90 hover:bg-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-red-500/30 transition-all flex flex-col w-48 h-80';
+        const card = document.createElement('div');
+        card.className = 'movie-card bg-gray-800/90 border border-white/5 rounded-xl overflow-hidden shadow-lg cursor-pointer flex flex-col w-36 sm:w-48 h-64 sm:h-80 group relative text-left';
         const isTv = c.type === 'tvSeries' || c.type === 'tvMiniSeries';
-        const typeIcon = isTv
-            ? '<img src="assets/images/tv.svg" alt="TV" class="h-4 w-4 inline-block mr-1" />'
-            : '<img src="assets/images/movies.svg" alt="Movie" class="h-4 w-4 inline-block mr-1" />';
+        const typeLabel = isTv ? 'TV' : 'Movie';
         const posterUrl = c.img || c.image || c.image_large || '';
+
         card.innerHTML = `
-            <div class="h-64 w-full bg-gray-700 overflow-hidden">${posterUrl ? `<img src="${posterUrl}" alt="${c.title}" class="w-full h-full object-cover" />` : '<div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No Image</div>'}</div>
-            <div class="p-3 flex flex-col justify-between flex-1"> 
-                <div class="font-semibold text-sm leading-tight flex items-start line-clamp-2">${typeIcon}<span class="line-clamp-2">${c.title}</span></div>
-                <div class="text-xs text-gray-400 mt-2">${c.year || ''}</div>
+            <div class="aspect-[2/3] w-full bg-gray-900 overflow-hidden relative">
+                ${posterUrl ? `<img src="${posterUrl}" alt="${c.title}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />` : `<div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No Image</div>`}
+                <span class="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-md text-gray-200 uppercase tracking-wider">${typeLabel}</span>
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                        <svg class="w-5 h-5 fill-current translate-x-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="p-2.5 sm:p-3 flex flex-col justify-between flex-1 bg-gray-800/95"> 
+                <div class="font-semibold text-xs sm:text-sm leading-tight line-clamp-2 text-gray-100 group-hover:text-red-400 transition-colors">${c.title}</div>
+                <div class="text-[11px] sm:text-xs text-gray-400 mt-1 sm:mt-2 flex items-center justify-between">
+                    <span>${c.year || ''}</span>
+                    <span class="text-[11px] text-red-400 font-medium">Watch →</span>
+                </div>
             </div>`;
         card.addEventListener('click', () => navigateTo(c.id, false));
         App.elements.featuredGrid.appendChild(card);

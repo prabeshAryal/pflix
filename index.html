@@ -31,9 +31,45 @@
         }
         body { 
             font-family: 'Inter', sans-serif;
-            background-image: radial-gradient(900px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(239, 68, 68, 0.07), transparent 75%);
+            background-image: radial-gradient(900px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(239, 68, 68, 0.08), transparent 75%);
             background-attachment: fixed;
+            overflow-x: hidden;
         }
+        /* Custom sleek scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Smooth section transitions */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px) scale(0.995);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .fade-in {
+            animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.2s ease-out;
+        }
+
         @keyframes pulse-status {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.35; transform: scale(0.85); }
@@ -41,86 +77,180 @@
         .animate-status-pulse {
             animation: pulse-status 1.2s infinite ease-in-out;
         }
+
+        /* Glassmorphism & cards */
+        .glass-panel {
+            background: rgba(31, 41, 55, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .movie-card {
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+        }
+        .movie-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 28px -6px rgba(220, 38, 38, 0.25);
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 w-full h-full m-0 p-0">
+<body class="bg-gray-900 text-gray-100 w-full h-full m-0 p-0 selection:bg-red-600 selection:text-white">
     <div id="app-root" class="min-h-screen flex flex-col">
-    <!-- Global Home Button: fixed position, only visible when not on homepage or player preview -->
-    <button id="global-home-btn" class="hidden fixed top-6 right-6 z-50 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-full text-lg shadow-lg transition-all flex items-center gap-2">
-        <img src="assets/images/home.svg" alt="Home" class="h-6 w-6" />
-        Home
-    </button>
-    <!-- Navbar removed. Donation, AdBlock, and About below search bar on homepage -->
-    <main id="main-content" class="flex-1 flex flex-col items-center justify-center w-full transition-all duration-500">
-            <!-- Central search -->
-            <section id="search-section" class="w-full flex flex-col items-center justify-center gap-8 py-8 sm:py-12 px-2 sm:px-0 mt-12 sm:mt-0">
-                <div class="w-full max-w-xl flex flex-col items-center gap-4 px-2 sm:px-0">
-                    <h2 class="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-center">Find where to stream any movie or show</h2>
-                    <form id="main-search-form" class="w-full flex flex-col sm:flex-row gap-2 justify-center">
-                        <input id="search-input" type="text" placeholder="Search movies, shows..." class="w-full bg-gray-800 text-white rounded-full py-3 sm:py-4 px-4 sm:px-6 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all" />
-                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-full text-base sm:text-lg transition-all">Search</button>
-                        <button type="button" id="explore-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 rounded-full text-base sm:text-lg transition-all">Explore</button>
-                    </form>
-                    <!-- Donation, AdBlock, About below search -->
-                    <div class="flex flex-col items-center gap-2 mt-6 w-full">
-                        <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 sm:px-4 py-2 rounded-full shadow transition-all text-xs sm:text-base">
-                            <span>Donate me so my site keeps running</span>
-                            <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-5 sm:h-6 w-auto" />
-                        </a>
-                        <div class="flex items-center gap-2 mt-2">
-                            <span class="text-gray-400 text-xs sm:text-sm">Use <a href="https://getadblock.com/en/" target="_blank" class="text-blue-400 underline">AdBlock</a> for best experience</span>
+        <!-- Top Persistent Glass Navbar -->
+        <header id="site-header" class="sticky top-0 z-40 w-full backdrop-blur-md bg-gray-900/80 border-b border-white/5 transition-all duration-300">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+                <a id="nav-logo" href="/" class="flex items-center gap-2 group cursor-pointer no-underline">
+                    <span class="w-8 h-8 rounded-lg bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center shadow-lg shadow-red-600/30 group-hover:scale-105 transition-transform">
+                        <svg class="w-4 h-4 text-white fill-current translate-x-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </span>
+                    <span class="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent font-black tracking-tighter text-2xl">Pflix</span>
+                </a>
+                <nav class="flex items-center gap-1 sm:gap-3">
+                    <button id="nav-home-btn" type="button" class="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-all cursor-pointer flex items-center gap-1">
+                        <img src="assets/images/home.svg" alt="Home" class="h-4 w-4" />
+                        <span>Home</span>
+                    </button>
+                    <button id="nav-explore-btn" type="button" class="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-all cursor-pointer flex items-center gap-1">
+                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span>Featured</span>
+                    </button>
+                    <button id="nav-about-btn" type="button" class="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-all cursor-pointer">
+                        <span>About</span>
+                    </button>
+                    <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" rel="noopener" class="hidden sm:inline-flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-3 py-1 rounded-full text-xs shadow-sm transition-transform hover:scale-105 ml-1">
+                        <span>Donate</span>
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Global Home Button: kept for backward compatibility and floating shortcuts -->
+        <button id="global-home-btn" class="hidden fixed bottom-6 right-6 z-50 bg-red-600 hover:bg-red-700 text-white font-bold p-3 rounded-full shadow-2xl transition-all hover:scale-110 flex items-center justify-center cursor-pointer" title="Return to Home">
+            <img src="assets/images/home.svg" alt="Home" class="h-6 w-6" />
+        </button>
+
+        <main id="main-content" class="flex-1 flex flex-col items-center justify-center w-full transition-all duration-300">
+            <!-- Central search section -->
+            <section id="search-section" class="w-full flex flex-col items-center justify-center gap-6 py-12 sm:py-16 px-4">
+                <div class="w-full max-w-2xl flex flex-col items-center gap-5 text-center">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold uppercase tracking-wider mb-1">
+                        <span>Free & Instant Streaming Search</span>
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-tight">
+                        Find where to stream <br class="hidden sm:inline" /><span class="bg-gradient-to-r from-red-500 to-rose-400 bg-clip-text text-transparent">any movie or show</span>
+                    </h2>
+                    <p class="text-sm sm:text-base text-gray-400 max-w-lg">
+                        Search thousands of titles, switch responsive video mirrors with live ping checks, and start watching immediately.
+                    </p>
+
+                    <form id="main-search-form" class="w-full relative flex flex-col sm:flex-row gap-2 justify-center mt-3">
+                        <div class="relative flex-1 w-full">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            </div>
+                            <input id="search-input" type="text" placeholder="Search movies, TV shows... (Press / to focus)" class="w-full bg-gray-800/90 hover:bg-gray-800 border border-white/10 text-white rounded-full py-3.5 pl-11 pr-10 text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all shadow-inner" />
+                            <button id="search-clear-btn" type="button" class="hidden absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-white cursor-pointer text-xl leading-none">×</button>
                         </div>
-                        <button id="about-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-3 sm:px-4 py-2 rounded-full text-xs sm:text-lg transition-all mt-2">About Us</button>
+                        <button type="submit" class="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold px-6 py-3.5 rounded-full text-base shadow-lg shadow-red-600/30 transition-all hover:scale-[1.02] cursor-pointer">Search</button>
+                        <button type="button" id="explore-btn" class="bg-gray-800 hover:bg-gray-700 border border-white/10 text-white font-semibold px-5 py-3.5 rounded-full text-base transition-all hover:scale-[1.02] cursor-pointer">Explore</button>
+                    </form>
+
+                    <!-- Popular trending shortcuts -->
+                    <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-1 text-xs text-gray-400">
+                        <span class="text-gray-500 font-medium">Trending:</span>
+                        <button type="button" class="trending-tag px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition-colors cursor-pointer" data-query="Inception">Inception</button>
+                        <button type="button" class="trending-tag px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition-colors cursor-pointer" data-query="Stranger Things">Stranger Things</button>
+                        <button type="button" class="trending-tag px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition-colors cursor-pointer" data-query="Breaking Bad">Breaking Bad</button>
+                        <button type="button" class="trending-tag px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition-colors cursor-pointer" data-query="Interstellar">Interstellar</button>
+                        <button type="button" class="trending-tag px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 transition-colors cursor-pointer" data-query="The Boys">The Boys</button>
+                    </div>
+
+                    <!-- Donation, AdBlock info below search -->
+                    <div class="flex flex-col items-center gap-2 mt-8 w-full">
+                        <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" rel="noopener" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-full shadow-md transition-all hover:scale-105 text-xs sm:text-sm">
+                            <span>Donate to keep Pflix running</span>
+                            <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-5 w-auto" />
+                        </a>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-gray-400 text-xs sm:text-sm">Pro tip: Use <a href="https://getadblock.com/en/" target="_blank" rel="noopener" class="text-blue-400 hover:underline">AdBlock</a> for an ad-free streaming experience</span>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <!-- Featured grid (Explore) -->
-            <section id="explore-section" class="w-full max-w-7xl mx-auto hidden transition-all duration-500 flex flex-col px-6 mt-12 sm:mt-0">
-                <div class="flex items-center justify-center mb-8 mt-8 sm:mt-0">
-                    <h3 class="text-3xl font-bold text-center">Featured</h3>
+            <section id="explore-section" class="w-full max-w-7xl mx-auto hidden transition-all duration-300 flex flex-col px-4 sm:px-6 py-6">
+                <div class="flex items-center justify-between mb-6 pb-3 border-b border-white/5">
+                    <div>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Featured Titles</h3>
+                        <p class="text-xs sm:text-sm text-gray-400 mt-0.5">Popular movies and series ready to stream</p>
+                    </div>
+                    <button id="explore-home-btn" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 transition-all cursor-pointer">
+                        <img src="assets/images/home.svg" alt="Home" class="h-4 w-4" />
+                        <span>Search</span>
+                    </button>
                 </div>
-                <div id="explore-spinner" class="w-full flex justify-center py-8"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>
-                <div id="featured-grid" class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-8 justify-items-center">
-                    <!-- Cards will be rendered by JS, portrait, two-line titles -->
+                <div id="explore-spinner" class="w-full flex justify-center py-12"><div class="w-10 h-10 border-4 border-t-red-500 border-gray-700 rounded-full animate-spin"></div></div>
+                <div id="featured-grid" class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 justify-items-center">
+                    <!-- Cards rendered by JS -->
                 </div>
             </section>
 
             <!-- Search results -->
-            <section id="results-section" class="w-full max-w-7xl mx-auto hidden transition-all duration-500 flex flex-col px-6 mt-12 sm:mt-0">
-                <div class="flex items-center justify-center mb-8 mt-8 sm:mt-0">
-                    <h3 class="text-3xl font-bold text-center">Search Results</h3>
+            <section id="results-section" class="w-full max-w-7xl mx-auto hidden transition-all duration-300 flex flex-col px-4 sm:px-6 py-6">
+                <div class="flex items-center justify-between mb-6 pb-3 border-b border-white/5">
+                    <div>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Search Results</h3>
+                        <p id="results-query-label" class="text-xs sm:text-sm text-gray-400 mt-0.5">Showing results</p>
+                    </div>
+                    <button id="results-home-btn" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 transition-all cursor-pointer">
+                        <img src="assets/images/home.svg" alt="Home" class="h-4 w-4" />
+                        <span>Home</span>
+                    </button>
                 </div>
-                <div id="results-spinner" class="w-full flex justify-center py-8"><div class="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin"></div></div>
-                <div id="search-results" class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-8 justify-items-center">
-                    <!-- Cards will be rendered by JS, portrait, two-line titles -->
+                <div id="results-spinner" class="w-full flex justify-center py-12"><div class="w-10 h-10 border-4 border-t-red-500 border-gray-700 rounded-full animate-spin"></div></div>
+                <div id="search-results" class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6 justify-items-center">
+                    <!-- Cards rendered by JS -->
                 </div>
             </section>
 
             <!-- Details / Player container -->
-            <section id="details-section" class="w-full h-full hidden transition-all duration-500 flex flex-col overflow-hidden">
-                <div id="watch-page-container" class="w-full h-full overflow-auto"></div>
+            <section id="details-section" class="w-full flex-1 hidden transition-all duration-300 flex flex-col">
+                <div id="watch-page-container" class="w-full flex-1 flex flex-col"></div>
             </section>
 
-            <!-- About/Privacy modal/page -->
-            <section id="about-section" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden transition-all duration-500">
-                <div class="bg-gray-900 rounded-2xl shadow-2xl p-4 sm:p-8 max-w-2xl w-full relative overflow-y-auto max-h-screen">
-                    <button id="about-close" class="absolute top-4 right-4 text-gray-400 hover:text-red-400 text-2xl">&times;</button>
-                    <div class="flex flex-col items-center gap-4">
-                        <h2 class="text-3xl font-bold mb-2">About & Privacy</h2>
-                        <p class="text-lg text-gray-300 text-center">This site is a modern, upgraded clone of <a href="https://github.com/hemantapkh/streamit" class="text-red-400 underline" target="_blank">StreamIt</a> using new APIs and a better UI. It is a static site: it does not host, run, or control any content, and does not place ads except for the donation button. All streams are fetched from public third-party sources. If you have DMCA or privacy concerns, please contact the original host. I do not control or store any video or data.<br><br>For the best experience, use <a href="https://getadblock.com/en/" target="_blank" class="text-blue-400 underline">AdBlock</a>.<br><br>Donate to keep the site running! <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-full shadow transition-all ml-2"><span>Donate me</span><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-6 w-auto" /></a></p>
-                        <div class="mt-6">
-                            <button id="about-home" class="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-full text-lg transition-all">Return to Home</button>
+            <!-- About/Privacy modal -->
+            <section id="about-section" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden transition-all duration-300 p-4">
+                <div class="glass-panel bg-gray-900/95 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full relative overflow-y-auto max-h-[90vh] border border-white/10">
+                    <button id="about-close" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl cursor-pointer w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">&times;</button>
+                    <div class="flex flex-col items-center gap-4 text-center">
+                        <div class="w-12 h-12 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-white">About Pflix</h2>
+                        <p class="text-sm sm:text-base text-gray-300 leading-relaxed">
+                            Pflix is a free and open-source media finder inspired by StreamIt, powered by a custom Cloudflare Workers API. Pflix does not host, store, or stream any content directly; all streams are embedded via public third-party providers.
+                        </p>
+                        <div class="bg-gray-800/60 rounded-xl p-4 w-full text-left text-xs sm:text-sm text-gray-400 space-y-2 border border-white/5">
+                            <p><strong class="text-gray-200">AdBlock Recommendation:</strong> Embedded players may contain third-party popups. We strongly recommend using <a href="https://getadblock.com/en/" target="_blank" rel="noopener" class="text-red-400 hover:underline">AdBlock</a> or uBlock Origin.</p>
+                            <p><strong class="text-gray-200">Server Status:</strong> Check live latency badges next to server names on the player to pick the fastest responding mirror.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-center gap-3 mt-4">
+                            <a href="https://www.buymeacoffee.com/prabesharyal" target="_blank" rel="noopener" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-5 py-2.5 rounded-full text-sm shadow transition-transform hover:scale-105">
+                                <span>Support Prabesh</span>
+                                <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" class="h-5 w-auto" />
+                            </a>
+                            <button id="about-home" class="bg-gray-800 hover:bg-gray-700 text-white font-medium px-5 py-2.5 rounded-full text-sm border border-white/10 transition-colors cursor-pointer">Close</button>
                         </div>
                     </div>
                 </div>
             </section>
         </main>
 
-    <!-- Footer -->
-    <footer class="text-center mt-16 pb-8">
-        <a href="https://prabe.sh" class="text-sm themed-text opacity-60" target="_blank" rel="noopener">© 2025 prabe.sh</a>
-    </footer>
+        <!-- Footer -->
+        <footer id="site-footer" class="text-center py-6 border-t border-white/5 text-gray-500 text-xs">
+            <a href="https://prabe.sh" class="hover:text-gray-400 transition-colors" target="_blank" rel="noopener">© 2025 prabe.sh</a>
+        </footer>
     </div>
 
     <script src="providers.js"></script>
