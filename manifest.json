@@ -1,0 +1,25 @@
+{
+    "name": "Pflix - Streaming Finder",
+    "short_name": "Pflix",
+    "description": "Find where to stream any movie or TV show.",
+    "start_url": "./",
+    "scope": "./",
+    "display": "fullscreen",
+    "orientation": "any",
+    "background_color": "#080b12",
+    "theme_color": "#111827",
+    "icons": [
+        {
+            "src": "assets/images/pflix.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "assets/images/pflix.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

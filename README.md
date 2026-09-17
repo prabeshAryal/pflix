@@ -12,6 +12,7 @@ Find where to stream any movie or TV show, instantly. Pflix is a modern, fast, a
 - 🎥 **Details & Player**: View rich details and stream content directly from public sources.
 - �️ **Single Page App (SPA)**: Lightning-fast navigation, no reloads.
 - 📱 **Responsive Design**: Works perfectly on mobile, tablet, and desktop.
+- 🖥️ **Installable PWA**: Install Pflix from a supported browser and launch it as a fullscreen app.
 - 🔒 **Privacy First**: No ads, no tracking, no user data collection.
 - 🛡️ **SEO Optimized**: Canonical URLs, meta tags, and Open Graph for best discoverability.
 
@@ -25,6 +26,14 @@ Find where to stream any movie or TV show, instantly. Pflix is a modern, fast, a
 - Tailwind CSS (via CDN)
 - Static HTML
 - Public APIs (imdbapi.dev)
+
+## 📁 Project Structure
+
+- `index.html`: Application shell and page markup
+- `css/`: Source and generated stylesheets
+- `js/`: Application, provider, and health-check scripts
+- `manifest.json`: Progressive Web App metadata and fullscreen launch settings
+- `service-worker.js`: App-shell caching for installed PWA launches
 
 ## 📦 How It Works
 

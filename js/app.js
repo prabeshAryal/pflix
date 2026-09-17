@@ -1187,6 +1187,11 @@ function initBackgroundEffect() {
  */
 function init() {
     initBackgroundEffect();
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js').catch((error) => {
+            console.error('PWA service worker registration failed:', error);
+        });
+    }
     App.elements = {
         searchInput: document.getElementById('search-input'),
         heroSearchInput: document.getElementById('hero-search-input'),
