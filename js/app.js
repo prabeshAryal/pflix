@@ -1401,6 +1401,14 @@ function showSearchView() {
 }
 function showContentView() {
     showSection('details');
+    const container = document.getElementById('watch-page-container');
+    if (container) {
+        container.innerHTML = `
+            <div class="details-loading" role="status" aria-label="Loading">
+                <div class="details-loading-spinner"></div>
+            </div>
+        `;
+    }
 }
 
 /**

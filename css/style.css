@@ -418,6 +418,28 @@ select:focus-visible,
     display: none !important;
 }
 
+.details-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: min(70vh, 32rem);
+}
+
+.details-loading-spinner {
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 4px solid rgba(255, 255, 255, 0.14);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: details-loading-spin 0.8s linear infinite;
+}
+
+@keyframes details-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .home-panel {
     width: min(100%, 760px);
     min-width: 0;
