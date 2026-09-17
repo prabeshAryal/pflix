@@ -203,16 +203,17 @@ function createMediaCard(item, onClick) {
         `;
     }
 
-    card.addEventListener('click', () => {
+    const openTitle = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
         if (onClick) onClick();
         else navigateTo(item.id);
-    });
+    };
 
+    card.addEventListener('click', openTitle);
     card.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            if (onClick) onClick();
-            else navigateTo(item.id);
+            openTitle(e);
         }
     });
 
