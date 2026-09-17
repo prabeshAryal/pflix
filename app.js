@@ -998,101 +998,13 @@ function init() {
         }, 2000);
     };
 
-    const searchClearBtn = document.getElementById('search-clear-btn');
-    const updateClearBtn = () => {
-        if (searchClearBtn) {
-            if (App.elements.searchInput.value.length > 0) {
-                searchClearBtn.classList.remove('hidden');
-            } else {
-                searchClearBtn.classList.add('hidden');
-            }
-        }
-    };
-
     App.elements.searchInput.addEventListener('input', (e) => {
-        updateClearBtn();
         handleSearch(e.target.value);
-    });
-
-    searchClearBtn?.addEventListener('click', () => {
-        App.elements.searchInput.value = '';
-        updateClearBtn();
-        showHomeView();
-    });
-
-    // Wire up trending quick-search buttons
-    document.querySelectorAll('.trending-tag').forEach(tag => {
-        tag.addEventListener('click', (e) => {
-            const query = e.currentTarget.dataset.query;
-            if (query) {
-                App.elements.searchInput.value = query;
-                updateClearBtn();
-                showSection('results');
-                search(query);
-            }
-        });
-    });
-
-    // Wire up header navbar buttons
-    document.getElementById('nav-logo')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const url = new URL(window.location);
-        url.search = '';
-        window.history.pushState({}, '', url);
-        if (App.elements.searchInput) App.elements.searchInput.value = '';
-        updateClearBtn();
-        showHomeView();
-    });
-
-    document.getElementById('nav-home-btn')?.addEventListener('click', () => {
-        const url = new URL(window.location);
-        url.search = '';
-        window.history.pushState({}, '', url);
-        if (App.elements.searchInput) App.elements.searchInput.value = '';
-        updateClearBtn();
-        showHomeView();
-    });
-
-    document.getElementById('nav-explore-btn')?.addEventListener('click', () => {
-        const url = new URL(window.location);
-        url.searchParams.set('page', 'explore');
-        url.searchParams.delete('q');
-        url.searchParams.delete('id');
-        url.searchParams.delete('view');
-        window.history.pushState({ page: 'explore' }, '', url);
-        document.title = 'Featured Movies & TV Shows - Pflix';
-        showSection('explore');
-        loadFeatured();
-    });
-
-    document.getElementById('nav-about-btn')?.addEventListener('click', () => {
-        showSection('about');
-    });
-
-    // Global keyboard shortcuts: / focuses search, Esc exits modal/player
-    window.addEventListener('keydown', (e) => {
-        if (e.key === '/' && document.activeElement !== App.elements.searchInput && document.activeElement?.tagName !== 'INPUT') {
-            e.preventDefault();
-            App.elements.searchInput.focus();
-            App.elements.searchInput.select();
-        } else if (e.key === 'Escape') {
-            const aboutSection = document.getElementById('about-section');
-            if (aboutSection && !aboutSection.classList.contains('hidden')) {
-                showHomeView();
-            } else {
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('view') === 'player') {
-                    const id = urlParams.get('id');
-                    if (id) navigateTo(id, false);
-                }
-            }
-        }
     });
 
     if (App.elements.heroSearchInput) {
         App.elements.heroSearchInput.addEventListener('input', (e) => {
             App.elements.searchInput.value = e.target.value;
-            updateClearBtn();
             handleSearch(e.target.value);
         });
     }
@@ -1104,7 +1016,6 @@ function init() {
             url.search = '';
             window.history.pushState({}, '', url);
             if (App.elements.searchInput) App.elements.searchInput.value = '';
-            updateClearBtn();
             if (App.elements.homeHero) showHomeView(); else showSearchView();
         });
     }
@@ -1131,7 +1042,6 @@ function init() {
         navigateTo(imdbId, play);
     } else if (query) {
         App.elements.searchInput.value = query;
-        updateClearBtn();
         search(query);
     } else if (page === 'explore') {
         showSection('explore');
@@ -1194,7 +1104,6 @@ document.getElementById('main-search-form')?.addEventListener('submit', (e) => {
     }
 });
 
-// Section show/hide logic for smooth transitions
 function showSection(section) {
     const sections = {
         search: document.getElementById('search-section'),
@@ -1207,12 +1116,8 @@ function showSection(section) {
         if (!el) return;
         if (key === section) {
             el.classList.remove('hidden');
-            el.classList.add('flex', 'fade-in');
-            el.classList.remove('fade-out');
         } else {
             el.classList.add('hidden');
-            el.classList.remove('flex', 'fade-in');
-            el.classList.add('fade-out');
         }
     });
     // Hide spinners when entering non-results sections
@@ -1223,8 +1128,6 @@ function showSection(section) {
     // Details/player view special case
     if (section === 'details') {
         sections.details?.classList.remove('hidden');
-        sections.details?.classList.add('flex', 'fade-in');
-        sections.details?.classList.remove('fade-out');
     }
     // Toggle footer visibility so details/player doesn't get pushed into unnecessary scroll
     const footer = document.getElementById('site-footer');
