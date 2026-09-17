@@ -1,0 +1,26 @@
+{
+  "name": "pflix",
+  "version": "1.0.0",
+  "description": "Find where to stream any movie or TV show, instantly. Pflix is a modern, fast, and privacy-friendly streaming search engine and aggregator. Search thousands of titles and discover streaming options across multiple platforms, all in one place.",
+  "main": "app.js",
+  "scripts": {
+    "build:css": "tailwindcss -i input.css -o tailwind.css --minify",
+    "watch:css": "tailwindcss -i input.css -o tailwind.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prabeshAryal/pflix.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/prabeshAryal/pflix/issues"
+  },
+  "homepage": "https://github.com/prabeshAryal/pflix#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}
