@@ -100,17 +100,61 @@ async function search(query) {
     }
 }
 
+// View Mode (grid vs list) state
+let currentViewMode = localStorage.getItem('pflix_view_mode') || 'grid';
+
 /**
- * Creates a modern, cinematic responsive media card element.
+ * Sets the active view mode (grid or list) and updates containers and controls
+ * @param {'grid' | 'list'} mode
+ */
+function setViewMode(mode) {
+    currentViewMode = mode;
+    try {
+        localStorage.setItem('pflix_view_mode', mode);
+    } catch (_) {}
+
+    const isGrid = mode === 'grid';
+    const searchContainer = document.getElementById('search-results');
+    const featuredContainer = document.getElementById('featured-grid');
+
+    [searchContainer, featuredContainer].forEach(el => {
+        if (!el) return;
+        el.className = isGrid ? 'media-grid-container' : 'media-list-container';
+    });
+
+    const updateButtons = (gridBtnId, listBtnId) => {
+        const gridBtn = document.getElementById(gridBtnId);
+        const listBtn = document.getElementById(listBtnId);
+        if (gridBtn && listBtn) {
+            if (isGrid) {
+                gridBtn.className = 'p-1.5 rounded-lg text-white bg-red-600 shadow transition-all cursor-pointer';
+                listBtn.className = 'p-1.5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer';
+            } else {
+                gridBtn.className = 'p-1.5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer';
+                listBtn.className = 'p-1.5 rounded-lg text-white bg-red-600 shadow transition-all cursor-pointer';
+            }
+        }
+    };
+
+    updateButtons('results-view-grid-btn', 'results-view-list-btn');
+    updateButtons('explore-view-grid-btn', 'explore-view-list-btn');
+
+    if (App.lastSearchResults && App.lastSearchResults.length > 0 && !document.getElementById('results-section')?.classList.contains('hidden')) {
+        renderSearchResults(App.lastSearchResults, App.lastSearchQuery);
+    }
+    if (App.lastFeaturedList && App.lastFeaturedList.length > 0 && !document.getElementById('explore-section')?.classList.contains('hidden')) {
+        renderFeaturedGrid(App.lastFeaturedList);
+    }
+}
+
+/**
+ * Creates a modern, cinematic responsive media card element (Grid or List mode).
  * @param {Object} item - Media item metadata (id, title, year, image, type)
  * @param {Function} [onClick] - Custom click handler (defaults to navigateTo(id))
  * @returns {HTMLElement} The card element
  */
 function createMediaCard(item, onClick) {
-    const card = document.createElement('div');
-    card.className = 'group relative flex flex-col w-full cursor-pointer select-none text-left focus:outline-none focus:ring-2 focus:ring-red-500 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:-translate-y-1.5';
-    card.tabIndex = 0;
-
+    const isList = currentViewMode === 'list';
     const titleName = item.title || item.primaryTitle || 'Unknown Title';
     const year = item.year || item.startYear || '';
     const imageUrl = item.image || item.image_large || item.img || item.primaryImage?.url || '';
@@ -118,46 +162,68 @@ function createMediaCard(item, onClick) {
     const typeLabel = isTv ? 'TV' : 'Movie';
     const cleanTitle = titleName.replace(/"/g, '&quot;');
 
-    card.innerHTML = `
-        <div class="relative w-full aspect-[2/3] rounded-xl sm:rounded-2xl overflow-hidden bg-gray-800/80 border border-white/10 shadow-md group-hover:border-red-500/50 group-hover:shadow-2xl group-hover:shadow-red-600/20 transition-all duration-300">
-            ${imageUrl ? `
-                <img src="${imageUrl}" alt="${cleanTitle}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gray-900 text-gray-500\\'><svg class=\\'w-8 h-8 mb-2 opacity-40\\' fill=\\'none\\' stroke=\\'currentColor\\' viewBox=\\'0 0 24 24\\'><path stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\' stroke-width=\\'1.5\\' d=\\'M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z\\'/></svg><span class=\\'text-xs font-semibold text-gray-400 line-clamp-2\\'>${cleanTitle}</span></div>';" />
-            ` : `
-                <div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gray-900 text-gray-500">
-                    <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
-                    <span class="text-xs font-semibold text-gray-400 line-clamp-2">${cleanTitle}</span>
-                </div>
-            `}
-            
-            <!-- Floating top badges -->
-            <div class="absolute top-2 inset-x-2 flex items-center justify-between pointer-events-none z-10 gap-1">
-                ${year ? `<span class="px-1.5 sm:px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] sm:text-[11px] font-semibold text-gray-200 border border-white/10 shadow-sm">${year}</span>` : `<span></span>`}
-                <span class="px-1.5 sm:px-2 py-0.5 rounded-md ${isTv ? 'bg-indigo-600/90 text-indigo-100 border border-indigo-400/30' : 'bg-red-600/90 text-red-100 border border-red-400/30'} backdrop-blur-md text-[9px] sm:text-[10px] font-bold shadow-sm uppercase tracking-wider">${typeLabel}</span>
+    const card = document.createElement('div');
+    card.tabIndex = 0;
+
+    if (isList) {
+        card.className = 'media-list-item';
+        card.innerHTML = `
+            <div class="media-list-poster-thumb">
+                ${imageUrl ? `
+                    <img src="${imageUrl}" alt="${cleanTitle}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\' fill=\\'%236b7280\\'><path d=\\'M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z\\'/></svg>';" />
+                ` : `
+                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#111827;color:#6b7280;">
+                        <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+                    </div>
+                `}
             </div>
-
-            <!-- Subtle bottom vignette -->
-            <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-gray-950/80 via-transparent to-transparent pointer-events-none"></div>
-
-            <!-- Hover Play Button Overlay -->
-            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                <div class="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/50 transform scale-75 group-hover:scale-100 transition-all duration-300">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 fill-current translate-x-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <div class="media-list-body">
+                <div class="media-list-title" title="${cleanTitle}">${titleName}</div>
+                <div class="media-list-tags">
+                    ${year ? `<span class="media-badge media-badge-year">${year}</span>` : ''}
+                    <span class="media-badge media-badge-type ${isTv ? 'tv' : 'movie'}">${typeLabel}</span>
                 </div>
             </div>
-        </div>
-
-        <!-- Meta Details Below Poster -->
-        <div class="pt-2 sm:pt-2.5 px-0.5 flex flex-col gap-0.5">
-            <h4 class="font-semibold text-xs sm:text-sm text-gray-100 group-hover:text-red-400 transition-colors line-clamp-1 leading-snug tracking-tight" title="${cleanTitle}">${titleName}</h4>
-            <div class="flex items-center justify-between text-[11px] sm:text-xs text-gray-400">
-                <span>${year || typeLabel}</span>
-                <span class="flex items-center gap-0.5 text-red-400 font-semibold group-hover:translate-x-0.5 transition-transform text-[11px]">
-                    <span>Watch</span>
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </span>
+            <div class="media-list-action">
+                <span>Watch</span>
+                <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </div>
-        </div>
-    `;
+        `;
+    } else {
+        card.className = 'media-card';
+        card.innerHTML = `
+            <div class="media-card-poster-wrap">
+                ${imageUrl ? `
+                    <img src="${imageUrl}" alt="${cleanTitle}" loading="lazy" class="media-card-poster-img" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;background:#111827;color:#6b7280;text-align:center;\\'><svg style=\\'width:24px;height:24px;opacity:0.5;margin-bottom:4px;\\' fill=\\'none\\' stroke=\\'currentColor\\' viewBox=\\'0 0 24 24\\'><path stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\' stroke-width=\\'1.5\\' d=\\'M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z\\'/></svg><span style=\\'font-size:10px;font-weight:600;\\'>${cleanTitle}</span></div>';" />
+                ` : `
+                    <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;background:#111827;color:#6b7280;text-align:center;">
+                        <svg style="width:24px;height:24px;opacity:0.5;margin-bottom:4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+                        <span style="font-size:10px;font-weight:600;">${cleanTitle}</span>
+                    </div>
+                `}
+                <div class="media-card-badges">
+                    ${year ? `<span class="media-badge media-badge-year">${year}</span>` : `<span></span>`}
+                    <span class="media-badge media-badge-type ${isTv ? 'tv' : 'movie'}">${typeLabel}</span>
+                </div>
+                <div class="media-card-vignette"></div>
+                <div class="media-card-play-overlay">
+                    <div class="media-card-play-icon">
+                        <svg style="width:16px;height:16px;margin-left:2px;" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="media-card-meta">
+                <div class="media-card-title" title="${cleanTitle}">${titleName}</div>
+                <div class="media-card-sub">
+                    <span>${year || typeLabel}</span>
+                    <span class="media-card-watch">
+                        <span>Watch</span>
+                        <svg style="width:10px;height:10px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </span>
+                </div>
+            </div>
+        `;
+    }
 
     card.addEventListener('click', () => {
         if (onClick) onClick();
@@ -188,17 +254,20 @@ function renderSearchResults(titles, query = '') {
     const subtitleEl = document.getElementById('results-subtitle');
     const queryTerm = query || (App.elements.searchInput ? App.elements.searchInput.value.trim() : '');
 
+    App.lastSearchResults = titles || [];
+    App.lastSearchQuery = queryTerm;
+
     if (!titles || titles.length === 0) {
         if (subtitleEl) {
             subtitleEl.textContent = queryTerm ? `No results found for "${queryTerm}"` : 'No titles found';
         }
         App.elements.searchResults.innerHTML = `
-            <div class="col-span-full py-16 flex flex-col items-center justify-center text-center px-4">
-                <div class="w-16 h-16 rounded-2xl bg-gray-800/80 border border-white/10 flex items-center justify-center mb-4 text-gray-400 shadow-inner">
-                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <div class="col-span-full py-16 flex flex-col items-center justify-center text-center px-4" style="grid-column: 1 / -1; width: 100%;">
+                <div class="w-14 h-14 rounded-2xl bg-gray-800/80 border border-white/10 flex items-center justify-center mb-3 text-gray-400 shadow-inner">
+                    <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <h3 class="text-lg font-bold text-gray-200 mb-1">No matching titles</h3>
-                <p class="text-sm text-gray-400 max-w-sm">We couldn't find anything matching "${queryTerm}". Try checking for spelling or searching another keyword.</p>
+                <h3 class="text-base font-bold text-gray-200 mb-1">No matching titles</h3>
+                <p class="text-xs text-gray-400 max-w-xs">We couldn't find anything matching "${queryTerm}". Try checking for spelling or searching another keyword.</p>
             </div>
         `;
         return;
@@ -1172,6 +1241,9 @@ function init() {
         featuredGrid: document.getElementById('featured-grid'),
     };
 
+    // Apply saved view mode (grid or list)
+    setViewMode(currentViewMode);
+
     let lastSearchValue = '';
     const handleSearch = (value) => {
         clearTimeout(App.timers.searchDebounce);
@@ -1289,6 +1361,12 @@ document.getElementById('results-home-btn')?.addEventListener('click', navigateH
 document.getElementById('results-back-btn')?.addEventListener('click', navigateHome);
 document.getElementById('details-home-btn')?.addEventListener('click', navigateHome);
 
+// View switcher button listeners
+document.getElementById('results-view-grid-btn')?.addEventListener('click', () => setViewMode('grid'));
+document.getElementById('results-view-list-btn')?.addEventListener('click', () => setViewMode('list'));
+document.getElementById('explore-view-grid-btn')?.addEventListener('click', () => setViewMode('grid'));
+document.getElementById('explore-view-list-btn')?.addEventListener('click', () => setViewMode('list'));
+
 // Central search form: prevent default submit
 document.getElementById('main-search-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1353,6 +1431,7 @@ function showContentView() {
  */
 function renderFeaturedGrid(list) {
     if (!App.elements.featuredGrid) return;
+    App.lastFeaturedList = list || [];
     App.elements.featuredGrid.innerHTML = '';
     list.forEach((c) => {
         const card = createMediaCard(c, () => navigateTo(c.id, false));

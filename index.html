@@ -89,16 +89,26 @@
                             <p class="text-[11px] sm:text-xs md:text-sm text-gray-400">Top trending movies & blockbuster shows</p>
                         </div>
                     </div>
-                    <button id="explore-home-btn" class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white border border-white/10 text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95">
-                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                        <span>Home</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <!-- View switcher -->
+                        <div class="flex items-center bg-gray-800/90 rounded-xl p-0.5 border border-white/10">
+                            <button id="explore-view-grid-btn" title="Grid View" class="p-1.5 rounded-lg text-white bg-red-600 shadow transition-all cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/></svg>
+                            </button>
+                            <button id="explore-view-list-btn" title="List View" class="p-1.5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+                            </button>
+                        </div>
+                        <button id="explore-home-btn" class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white border border-white/10 text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                            <span>Home</span>
+                        </button>
+                    </div>
                 </div>
                 <div id="explore-spinner" class="w-full flex justify-center py-12">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 border-4 border-t-red-500 border-gray-700 rounded-full animate-spin"></div>
                 </div>
-                <div id="featured-grid"
-                    class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 w-full">
+                <div id="featured-grid" class="media-grid-container">
                     <!-- Cards will be rendered by JS -->
                 </div>
             </section>
@@ -116,16 +126,26 @@
                             <p id="results-subtitle" class="text-[11px] sm:text-xs md:text-sm text-gray-400">Discover matching movies & TV shows</p>
                         </div>
                     </div>
-                    <button id="results-home-btn" class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white border border-white/10 text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95">
-                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                        <span>Home</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <!-- View switcher -->
+                        <div class="flex items-center bg-gray-800/90 rounded-xl p-0.5 border border-white/10">
+                            <button id="results-view-grid-btn" title="Grid View" class="p-1.5 rounded-lg text-white bg-red-600 shadow transition-all cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/></svg>
+                            </button>
+                            <button id="results-view-list-btn" title="List View" class="p-1.5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+                            </button>
+                        </div>
+                        <button id="results-home-btn" class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-200 hover:text-white border border-white/10 text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                            <span>Home</span>
+                        </button>
+                    </div>
                 </div>
                 <div id="results-spinner" class="w-full flex justify-center py-12">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 border-4 border-t-red-500 border-gray-700 rounded-full animate-spin"></div>
                 </div>
-                <div id="search-results"
-                    class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 w-full">
+                <div id="search-results" class="media-grid-container">
                     <!-- Cards will be rendered by JS -->
                 </div>
             </section>
