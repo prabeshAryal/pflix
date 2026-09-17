@@ -39,3 +39,8 @@ html, body {
 .animate-status-pulse {
     animation: pulse-status 1.2s infinite ease-in-out;
 }
+
+/* Movie card cinematic aspect ratio fallback */
+.aspect-\[2\/3\] {
+    aspect-ratio: 2 / 3;
+}

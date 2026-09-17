@@ -1,24 +1,8 @@
-// Global Home Button logic
+// Global Home Button logic (Sections now have integrated top navigation bars)
 const globalHomeBtn = document.getElementById('global-home-btn');
 
 function updateGlobalHomeBtn() {
-    const activeSection = document.querySelector('#main-content > section:not(.hidden)');
-    const isPlayerFullscreen = document.fullscreenElement !== null;
-
-    if (!activeSection) {
-        globalHomeBtn?.classList.add('hidden');
-        return;
-    }
-
-    const sectionId = activeSection.id;
-    // Show on explore and results views only; Details and Player pages have integrated top navigation
-    const showButton = ['explore-section', 'results-section'].includes(sectionId);
-
-    if (showButton && !isPlayerFullscreen) {
-        globalHomeBtn?.classList.remove('hidden');
-    } else {
-        globalHomeBtn?.classList.add('hidden');
-    }
+    globalHomeBtn?.classList.add('hidden');
 }
 
 globalHomeBtn?.addEventListener('click', () => {
@@ -117,51 +101,117 @@ async function search(query) {
 }
 
 /**
- * Renders the search results on the page.
+ * Creates a modern, cinematic responsive media card element.
+ * @param {Object} item - Media item metadata (id, title, year, image, type)
+ * @param {Function} [onClick] - Custom click handler (defaults to navigateTo(id))
+ * @returns {HTMLElement} The card element
  */
-function renderSearchResults(titles) {
+function createMediaCard(item, onClick) {
+    const card = document.createElement('div');
+    card.className = 'group relative flex flex-col w-full cursor-pointer select-none text-left focus:outline-none focus:ring-2 focus:ring-red-500 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:-translate-y-1.5';
+    card.tabIndex = 0;
+
+    const titleName = item.title || item.primaryTitle || 'Unknown Title';
+    const year = item.year || item.startYear || '';
+    const imageUrl = item.image || item.image_large || item.img || item.primaryImage?.url || '';
+    const isTv = item.type === 'tvSeries' || item.type === 'tvMiniSeries' || item.type === 'tvMovie';
+    const typeLabel = isTv ? 'TV' : 'Movie';
+    const cleanTitle = titleName.replace(/"/g, '&quot;');
+
+    card.innerHTML = `
+        <div class="relative w-full aspect-[2/3] rounded-xl sm:rounded-2xl overflow-hidden bg-gray-800/80 border border-white/10 shadow-md group-hover:border-red-500/50 group-hover:shadow-2xl group-hover:shadow-red-600/20 transition-all duration-300">
+            ${imageUrl ? `
+                <img src="${imageUrl}" alt="${cleanTitle}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gray-900 text-gray-500\\'><svg class=\\'w-8 h-8 mb-2 opacity-40\\' fill=\\'none\\' stroke=\\'currentColor\\' viewBox=\\'0 0 24 24\\'><path stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\' stroke-width=\\'1.5\\' d=\\'M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z\\'/></svg><span class=\\'text-xs font-semibold text-gray-400 line-clamp-2\\'>${cleanTitle}</span></div>';" />
+            ` : `
+                <div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gray-900 text-gray-500">
+                    <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+                    <span class="text-xs font-semibold text-gray-400 line-clamp-2">${cleanTitle}</span>
+                </div>
+            `}
+            
+            <!-- Floating top badges -->
+            <div class="absolute top-2 inset-x-2 flex items-center justify-between pointer-events-none z-10 gap-1">
+                ${year ? `<span class="px-1.5 sm:px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] sm:text-[11px] font-semibold text-gray-200 border border-white/10 shadow-sm">${year}</span>` : `<span></span>`}
+                <span class="px-1.5 sm:px-2 py-0.5 rounded-md ${isTv ? 'bg-indigo-600/90 text-indigo-100 border border-indigo-400/30' : 'bg-red-600/90 text-red-100 border border-red-400/30'} backdrop-blur-md text-[9px] sm:text-[10px] font-bold shadow-sm uppercase tracking-wider">${typeLabel}</span>
+            </div>
+
+            <!-- Subtle bottom vignette -->
+            <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-gray-950/80 via-transparent to-transparent pointer-events-none"></div>
+
+            <!-- Hover Play Button Overlay -->
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                <div class="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/50 transform scale-75 group-hover:scale-100 transition-all duration-300">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 fill-current translate-x-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meta Details Below Poster -->
+        <div class="pt-2 sm:pt-2.5 px-0.5 flex flex-col gap-0.5">
+            <h4 class="font-semibold text-xs sm:text-sm text-gray-100 group-hover:text-red-400 transition-colors line-clamp-1 leading-snug tracking-tight" title="${cleanTitle}">${titleName}</h4>
+            <div class="flex items-center justify-between text-[11px] sm:text-xs text-gray-400">
+                <span>${year || typeLabel}</span>
+                <span class="flex items-center gap-0.5 text-red-400 font-semibold group-hover:translate-x-0.5 transition-transform text-[11px]">
+                    <span>Watch</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </span>
+            </div>
+        </div>
+    `;
+
+    card.addEventListener('click', () => {
+        if (onClick) onClick();
+        else navigateTo(item.id);
+    });
+
+    card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (onClick) onClick();
+            else navigateTo(item.id);
+        }
+    });
+
+    return card;
+}
+
+/**
+ * Renders the search results on the page.
+ * @param {Array} titles - List of matching title items
+ * @param {string} [query] - The search query term
+ */
+function renderSearchResults(titles, query = '') {
     showSearchView();
     document.getElementById('results-spinner').style.display = 'none';
     App.elements.searchResults.innerHTML = '';
+    
+    const subtitleEl = document.getElementById('results-subtitle');
+    const queryTerm = query || (App.elements.searchInput ? App.elements.searchInput.value.trim() : '');
+
     if (!titles || titles.length === 0) {
-        if (App.elements.searchInput.value.length > 1) {
-            App.elements.searchResults.innerHTML = `<p class="col-span-full text-center text-gray-400 mt-8">No results found for "${App.elements.searchInput.value}"</p>`;
+        if (subtitleEl) {
+            subtitleEl.textContent = queryTerm ? `No results found for "${queryTerm}"` : 'No titles found';
         }
-        document.getElementById('results-spinner').style.display = 'none';
+        App.elements.searchResults.innerHTML = `
+            <div class="col-span-full py-16 flex flex-col items-center justify-center text-center px-4">
+                <div class="w-16 h-16 rounded-2xl bg-gray-800/80 border border-white/10 flex items-center justify-center mb-4 text-gray-400 shadow-inner">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-200 mb-1">No matching titles</h3>
+                <p class="text-sm text-gray-400 max-w-sm">We couldn't find anything matching "${queryTerm}". Try checking for spelling or searching another keyword.</p>
+            </div>
+        `;
         return;
     }
+
+    if (subtitleEl) {
+        subtitleEl.textContent = queryTerm ? `Showing ${titles.length} title${titles.length === 1 ? '' : 's'} for "${queryTerm}"` : `Showing ${titles.length} titles`;
+    }
+
     titles.forEach(title => {
-        const item = document.createElement('div');
-        item.className = 'movie-card bg-gray-800/90 border border-white/5 rounded-xl overflow-hidden shadow-lg cursor-pointer flex flex-col w-36 sm:w-48 h-64 sm:h-80 group relative';
-        item.addEventListener('click', () => navigateTo(title.id));
-
-        const titleName = title.title || title.primaryTitle || 'Unknown Title';
-        const year = title.year || title.startYear || '';
-        const imageUrl = title.image || title.image_large || title.primaryImage?.url || '';
-        const isTv = title.type === 'tvSeries' || title.type === 'tvMiniSeries' || title.type === 'tvMovie';
-        const typeLabel = isTv ? 'TV' : 'Movie';
-
-        item.innerHTML = `
-            <div class="aspect-[2/3] w-full bg-gray-900 overflow-hidden relative">
-                ${imageUrl ? `<img src="${imageUrl}" alt="${titleName}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />` : `<div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No Image</div>`}
-                <span class="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-md text-gray-200 uppercase tracking-wider">${typeLabel}</span>
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
-                        <svg class="w-5 h-5 fill-current translate-x-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </div>
-                </div>
-            </div>
-            <div class="p-2.5 sm:p-3 flex flex-col justify-between flex-1 bg-gray-800/95"> 
-                <div class="font-semibold text-xs sm:text-sm leading-tight line-clamp-2 text-gray-100 group-hover:text-red-400 transition-colors">${titleName}</div>
-                <div class="text-[11px] sm:text-xs text-gray-400 mt-1 sm:mt-2 flex items-center justify-between">
-                    <span>${year}</span>
-                    <span class="text-[11px] text-red-400 font-medium">Watch →</span>
-                </div>
-            </div>`;
-        App.elements.searchResults.appendChild(item);
+        const card = createMediaCard(title, () => navigateTo(title.id));
+        App.elements.searchResults.appendChild(card);
     });
-
-    document.getElementById('results-spinner').style.display = 'none';
 }
 
 /**
@@ -1222,16 +1272,22 @@ document.getElementById('explore-btn')?.addEventListener('click', () => {
     loadFeatured();
 });
 
-// Section return to home buttons
-document.getElementById('explore-home-btn')?.addEventListener('click', () => {
-    showSection('search');
-});
-document.getElementById('results-home-btn')?.addEventListener('click', () => {
-    showSection('search');
-});
-document.getElementById('details-home-btn')?.addEventListener('click', () => {
-    showSection('search');
-});
+
+// Section return to home & back buttons
+const navigateHome = () => {
+    const url = new URL(window.location);
+    url.search = '';
+    window.history.pushState({}, '', url);
+    document.title = 'Pflix - Find where to stream any movie or TV show';
+    if (App.elements.searchInput) App.elements.searchInput.value = '';
+    showHomeView();
+};
+
+document.getElementById('explore-home-btn')?.addEventListener('click', navigateHome);
+document.getElementById('explore-back-btn')?.addEventListener('click', navigateHome);
+document.getElementById('results-home-btn')?.addEventListener('click', navigateHome);
+document.getElementById('results-back-btn')?.addEventListener('click', navigateHome);
+document.getElementById('details-home-btn')?.addEventListener('click', navigateHome);
 
 // Central search form: prevent default submit
 document.getElementById('main-search-form')?.addEventListener('submit', (e) => {
@@ -1299,30 +1355,7 @@ function renderFeaturedGrid(list) {
     if (!App.elements.featuredGrid) return;
     App.elements.featuredGrid.innerHTML = '';
     list.forEach((c) => {
-        const card = document.createElement('div');
-        card.className = 'movie-card bg-gray-800/90 border border-white/5 rounded-xl overflow-hidden shadow-lg cursor-pointer flex flex-col w-36 sm:w-48 h-64 sm:h-80 group relative text-left';
-        const isTv = c.type === 'tvSeries' || c.type === 'tvMiniSeries';
-        const typeLabel = isTv ? 'TV' : 'Movie';
-        const posterUrl = c.img || c.image || c.image_large || '';
-
-        card.innerHTML = `
-            <div class="aspect-[2/3] w-full bg-gray-900 overflow-hidden relative">
-                ${posterUrl ? `<img src="${posterUrl}" alt="${c.title}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />` : `<div class="w-full h-full flex items-center justify-center text-gray-500 text-xs">No Image</div>`}
-                <span class="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-md text-gray-200 uppercase tracking-wider">${typeLabel}</span>
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
-                        <svg class="w-5 h-5 fill-current translate-x-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </div>
-                </div>
-            </div>
-            <div class="p-2.5 sm:p-3 flex flex-col justify-between flex-1 bg-gray-800/95"> 
-                <div class="font-semibold text-xs sm:text-sm leading-tight line-clamp-2 text-gray-100 group-hover:text-red-400 transition-colors">${c.title}</div>
-                <div class="text-[11px] sm:text-xs text-gray-400 mt-1 sm:mt-2 flex items-center justify-between">
-                    <span>${c.year || ''}</span>
-                    <span class="text-[11px] text-red-400 font-medium">Watch →</span>
-                </div>
-            </div>`;
-        card.addEventListener('click', () => navigateTo(c.id, false));
+        const card = createMediaCard(c, () => navigateTo(c.id, false));
         App.elements.featuredGrid.appendChild(card);
     });
 }
