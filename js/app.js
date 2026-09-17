@@ -606,7 +606,13 @@ function renderPlayerPage(data) {
                 <!-- Video & Notices column -->
                 <div class="player-main">
                     <div id="stream-player-section" class="stream-player">
-                        <!-- Player iframe will be loaded here -->
+                        <div class="player-wireframe" aria-hidden="true">
+                            <div class="player-wireframe-icon skeleton-block"></div>
+                            <div class="player-wireframe-message">
+                                <div class="skeleton-block player-wireframe-line"></div>
+                                <div class="skeleton-block player-wireframe-line player-wireframe-line-short"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col xs:flex-row items-center justify-between gap-2.5 mt-3 pt-3 border-t border-white/5 text-xs">
                         <a href="https://getadblock.com/en/" target="_blank" rel="noopener" class="flex items-center gap-1.5 text-gray-400 hover:text-gray-200 transition-colors">
@@ -622,7 +628,20 @@ function renderPlayerPage(data) {
 
                 <!-- Aside: Episodes & Servers -->
                 <aside class="player-sidebar">
-                    <div id="episode-selector-container"></div>
+                    <div id="episode-selector-container">
+                        ${App.currentMedia.isTv ? `
+                            <div class="episode-wireframe" aria-hidden="true">
+                                <div class="skeleton-block episode-wireframe-label"></div>
+                                <div class="skeleton-block episode-wireframe-select"></div>
+                                <div class="skeleton-block episode-wireframe-label"></div>
+                                <div class="skeleton-block episode-wireframe-select"></div>
+                                <div class="episode-wireframe-actions">
+                                    <div class="skeleton-block episode-wireframe-button"></div>
+                                    <div class="skeleton-block episode-wireframe-button"></div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
                     <div class="flex items-center justify-between pb-2 border-b border-gray-700/60">
                         <h2 class="text-sm sm:text-base font-bold flex items-center gap-2 text-white">
                             <span>Servers</span>
@@ -633,7 +652,16 @@ function renderPlayerPage(data) {
                             <span>Ping</span>
                         </button>
                     </div>
-                    <div id="stream-buttons" class="flex flex-col gap-2 max-h-[360px] sm:max-h-[460px] overflow-y-auto pr-1"></div>
+                    <div id="stream-buttons" class="flex flex-col gap-2 max-h-[360px] sm:max-h-[460px] overflow-y-auto pr-1">
+                        <div class="server-wireframe" aria-hidden="true">
+                            ${Array.from({ length: 5 }, () => `
+                                <div class="skeleton-block server-wireframe-row">
+                                    <div class="skeleton-block server-wireframe-name"></div>
+                                    <div class="skeleton-block server-wireframe-latency"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 </aside>
             </div>
         </div>`;

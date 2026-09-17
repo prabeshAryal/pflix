@@ -1099,6 +1099,102 @@ select:focus-visible,
     box-shadow: var(--shadow-card);
 }
 
+.player-wireframe {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #05070b;
+}
+
+.player-wireframe-icon {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    width: 2rem;
+    height: 1.25rem;
+    border-radius: 50%;
+}
+
+.player-wireframe-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    width: min(42%, 15rem);
+}
+
+.player-wireframe-line {
+    width: 100%;
+    height: 0.65rem;
+    border-radius: 0.3rem;
+}
+
+.player-wireframe-line-short {
+    width: 62%;
+}
+
+.episode-wireframe {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.episode-wireframe-label {
+    width: 4rem;
+    height: 0.55rem;
+    border-radius: 0.25rem;
+}
+
+.episode-wireframe-select {
+    width: 100%;
+    height: 2.75rem;
+    border-radius: 0.75rem;
+}
+
+.episode-wireframe-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.episode-wireframe-button {
+    flex: 1;
+    height: 2.5rem;
+    border-radius: 0.65rem;
+}
+
+.server-wireframe {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.server-wireframe-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 2.75rem;
+    padding: 0.75rem;
+    border-radius: 0.65rem;
+}
+
+.server-wireframe-name {
+    width: 42%;
+    height: 0.65rem;
+    border-radius: 0.25rem;
+}
+
+.server-wireframe-latency {
+    width: 3rem;
+    height: 0.65rem;
+    border-radius: 0.25rem;
+}
+
 .player-sidebar {
     display: flex;
     flex-direction: column;
