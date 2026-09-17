@@ -1192,6 +1192,19 @@ function init() {
             console.error('PWA service worker registration failed:', error);
         });
     }
+    const homeSection = document.getElementById('search-section');
+    homeSection?.addEventListener('dblclick', (event) => {
+        if (
+            document.fullscreenElement ||
+            event.target.closest('button, input, a, form, textarea, select')
+        ) {
+            return;
+        }
+
+        document.documentElement.requestFullscreen?.().catch((error) => {
+            console.error('Fullscreen request failed:', error);
+        });
+    });
     App.elements = {
         searchInput: document.getElementById('search-input'),
         heroSearchInput: document.getElementById('hero-search-input'),
