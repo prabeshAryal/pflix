@@ -522,42 +522,117 @@ function renderPlayerPage(data) {
 }
 
 /**
+ * Fetches episode lists from TVMaze (by IMDb ID or title search)
+ */
+async function fetchEpisodesFromTvMaze(imdbId, title = '') {
+    try {
+        let showId = null;
+
+        // 1. Direct lookup by IMDb ID
+        try {
+            const lookupRes = await fetch(`https://api.tvmaze.com/lookup/shows?imdb=${imdbId}`);
+            if (lookupRes.ok) {
+                const show = await lookupRes.json();
+                if (show && show.id) showId = show.id;
+            }
+        } catch (_) {}
+
+        // 2. Fallback search by title if IMDb ID lookup didn't match
+        if (!showId && title) {
+            try {
+                const searchRes = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(title)}`);
+                if (searchRes.ok) {
+                    const results = await searchRes.json();
+                    if (Array.isArray(results) && results.length > 0) {
+                        const match = results.find(r => r.show?.externals?.imdb === imdbId) || results[0];
+                        if (match?.show?.id) showId = match.show.id;
+                    }
+                }
+            } catch (_) {}
+        }
+
+        if (!showId) return null;
+
+        // Fetch all episodes for this show
+        const epRes = await fetch(`https://api.tvmaze.com/shows/${showId}/episodes`);
+        if (!epRes.ok) return null;
+        const episodes = await epRes.json();
+        if (!Array.isArray(episodes) || episodes.length === 0) return null;
+
+        const seasonsObj = {};
+        episodes.forEach(ep => {
+            const sNum = ep.season || 1;
+            const sKey = String(sNum);
+            if (!seasonsObj[sKey]) seasonsObj[sKey] = [];
+            seasonsObj[sKey].push({
+                episodeNumber: Number(ep.number || seasonsObj[sKey].length + 1),
+                seasonNumber: Number(sNum),
+                primaryTitle: ep.name || `Episode ${ep.number || (seasonsObj[sKey].length + 1)}`,
+            });
+        });
+
+        Object.values(seasonsObj).forEach(list => list.sort((a, b) => a.episodeNumber - b.episodeNumber));
+        return seasonsObj;
+    } catch (error) {
+        console.warn('TVMaze episode indexing failed:', error);
+        return null;
+    }
+}
+
+/**
+ * Generates a default list of episodes (1 to max) for unindexed seasons
+ */
+function generateDefaultEpisodes(seasonNum, count = 24) {
+    const list = [];
+    for (let i = 1; i <= count; i++) {
+        list.push({
+            episodeNumber: i,
+            seasonNumber: Number(seasonNum),
+            primaryTitle: `Episode ${i}`,
+        });
+    }
+    return list;
+}
+
+/**
  * Fetches and processes episode data for a series.
  */
 async function fetchEpisodes(preferredServer = null) {
     try {
         let seasonsObj = {};
         const details = App.currentMedia.details || {};
+        const titleName = details.primaryTitle || details.title || '';
 
-        // 1. Check if all_seasons was provided by title details
-        if (Array.isArray(details.all_seasons) && details.all_seasons.length > 0) {
-            details.all_seasons.forEach(s => {
-                const sKey = String(s.id || s.value || s);
-                if (!seasonsObj[sKey]) seasonsObj[sKey] = [];
-            });
-            // First season episodes might already be attached
-            if (Array.isArray(details.seasons?.[0]?.episodes)) {
-                seasonsObj['1'] = details.seasons[0].episodes.map((ep, i) => ({
-                    episodeNumber: Number(ep.no || ep.idx || (i + 1)),
-                    seasonNumber: 1,
-                    primaryTitle: ep.title || `Episode ${ep.no || (i + 1)}`,
-                }));
+        // 1. Primary: fetch all seasons and episodes from TVMaze
+        const tvMazeSeasons = await fetchEpisodesFromTvMaze(App.currentMedia.id, titleName);
+        if (tvMazeSeasons && Object.keys(tvMazeSeasons).length > 0) {
+            seasonsObj = tvMazeSeasons;
+        }
+
+        // 2. If TVMaze returned nothing, check details.all_seasons or details.seasons
+        if (Object.keys(seasonsObj).length === 0) {
+            if (Array.isArray(details.all_seasons) && details.all_seasons.length > 0) {
+                details.all_seasons.forEach(s => {
+                    const sKey = String(s.id || s.value || s);
+                    if (!seasonsObj[sKey]) seasonsObj[sKey] = [];
+                });
+                if (Array.isArray(details.seasons?.[0]?.episodes)) {
+                    seasonsObj['1'] = details.seasons[0].episodes.map((ep, i) => ({
+                        episodeNumber: Number(ep.no || ep.idx || (i + 1)),
+                        seasonNumber: 1,
+                        primaryTitle: ep.title || `Episode ${ep.no || (i + 1)}`,
+                    }));
+                }
             }
         }
 
-        // 2. If season 1 episodes aren't populated yet, fetch season 1 from /title/{id}/season/1
-        if (!seasonsObj['1'] || seasonsObj['1'].length === 0) {
+        // 3. Fallback: try worker API routes /title/{id}/season/1 or /titles/{id}/episodes
+        if (Object.keys(seasonsObj).length === 0 || !seasonsObj['1'] || seasonsObj['1'].length === 0) {
             try {
                 const s1Res = await fetch(`${App.api.baseUrl}/title/${App.currentMedia.id}/season/1`);
                 if (s1Res.ok) {
                     const s1Data = await s1Res.json();
-                    if (Array.isArray(s1Data.all_seasons)) {
-                        s1Data.all_seasons.forEach(s => {
-                            const sKey = String(s.id || s.value || s);
-                            if (!seasonsObj[sKey]) seasonsObj[sKey] = [];
-                        });
-                    }
-                    if (Array.isArray(s1Data.episodes)) {
+                    if (Array.isArray(s1Data.episodes) && s1Data.episodes.length > 0) {
                         seasonsObj['1'] = s1Data.episodes.map((ep, i) => ({
                             episodeNumber: Number(ep.no || ep.idx || (i + 1)),
                             seasonNumber: 1,
@@ -568,33 +643,16 @@ async function fetchEpisodes(preferredServer = null) {
             } catch (_) {}
         }
 
-        // 3. Fallback: try old /titles/{id}/episodes route
-        if (Object.keys(seasonsObj).length === 0 || !seasonsObj['1'] || seasonsObj['1'].length === 0) {
-            try {
-                const oldEpRes = await fetch(`${App.api.baseUrl}/titles/${App.currentMedia.id}/episodes`);
-                if (oldEpRes.ok) {
-                    const oldEpData = await oldEpRes.json();
-                    const episodes = oldEpData.episodes || [];
-                    seasonsObj = episodes.reduce((acc, ep) => {
-                        const rawSeason = ep.season ?? ep.seasonNumber ?? '1';
-                        const seasonKey = String(rawSeason);
-                        if (!acc[seasonKey]) acc[seasonKey] = [];
-                        acc[seasonKey].push({
-                            ...ep,
-                            seasonNumber: Number(rawSeason) || 1,
-                            primaryTitle: ep.primaryTitle || ep.title || `Episode ${ep.episodeNumber}`,
-                        });
-                        return acc;
-                    }, {});
+        // 4. If we have season keys but no episodes, populate with selectable episodes
+        if (Object.keys(seasonsObj).length > 0) {
+            Object.keys(seasonsObj).forEach(sKey => {
+                if (!seasonsObj[sKey] || seasonsObj[sKey].length === 0) {
+                    seasonsObj[sKey] = generateDefaultEpisodes(sKey, 24);
                 }
-            } catch (_) {}
-        }
-
-        // 4. Default fallback: at least have Season 1 Episode 1
-        if (Object.keys(seasonsObj).length === 0) {
-            seasonsObj['1'] = [{ episodeNumber: 1, seasonNumber: 1, primaryTitle: 'Episode 1' }];
-        } else if (!seasonsObj['1'] || seasonsObj['1'].length === 0) {
-            seasonsObj['1'] = [{ episodeNumber: 1, seasonNumber: 1, primaryTitle: 'Episode 1' }];
+            });
+        } else {
+            // Default: provide Season 1 with selectable episodes (1 to 24)
+            seasonsObj['1'] = generateDefaultEpisodes(1, 24);
         }
 
         App.currentMedia.seasons = seasonsObj;
@@ -610,8 +668,8 @@ async function fetchEpisodes(preferredServer = null) {
 
     } catch (error) {
         console.error("Error fetching episodes:", error);
-        document.getElementById('episode-selector-container').innerHTML = `<p class="text-red-400 text-sm">Could not load episodes. Defaulting to S01E01.</p>`;
-        App.currentMedia.seasons = { '1': [{ episodeNumber: 1, seasonNumber: 1, primaryTitle: 'Episode 1' }] };
+        App.currentMedia.seasons = { '1': generateDefaultEpisodes(1, 24) };
+        renderEpisodeSelectors();
         renderServerButtons(preferredServer);
         const defaultProviderId = Object.keys(STREAMING_PROVIDERS).find(id => STREAMING_PROVIDERS[id].supports.includes('tv'));
         if (defaultProviderId) {
@@ -629,6 +687,8 @@ async function ensureSeasonLoaded(seasonNum) {
     if (App.currentMedia.seasons[sKey] && App.currentMedia.seasons[sKey].length > 0) {
         return App.currentMedia.seasons[sKey];
     }
+
+    // Try worker API endpoint
     try {
         const res = await fetch(`${App.api.baseUrl}/title/${App.currentMedia.id}/season/${seasonNum}`);
         if (res.ok) {
@@ -646,7 +706,8 @@ async function ensureSeasonLoaded(seasonNum) {
         }
     } catch (_) {}
 
-    const fallback = [{ episodeNumber: 1, seasonNumber: Number(seasonNum), primaryTitle: 'Episode 1' }];
+    // Fallback: provide 24 episodes for this season so user can stream any episode
+    const fallback = generateDefaultEpisodes(seasonNum, 24);
     App.currentMedia.seasons[sKey] = fallback;
     return fallback;
 }
