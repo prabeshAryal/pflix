@@ -1,18 +1,3 @@
-// Global Home Button logic (Sections now have integrated top navigation bars)
-const globalHomeBtn = document.getElementById('global-home-btn');
-
-function updateGlobalHomeBtn() {
-    globalHomeBtn?.classList.add('hidden');
-}
-
-globalHomeBtn?.addEventListener('click', () => {
-    // Redirect to root and clear all state
-    window.location.href = '/';
-});
-
-// Listen for fullscreen changes to hide/show the button
-document.addEventListener('fullscreenchange', updateGlobalHomeBtn);
-
 /**
  * Main application state and configuration.
  */
@@ -45,7 +30,7 @@ const App = {
 /**
  * Performs a search query to the API.
  */
-async function search(query) {
+async function search(query, updateHistory = true) {
     if (query.length < 1) {
         showHomeView();
         App.elements.searchResults.innerHTML = '';
@@ -55,7 +40,7 @@ async function search(query) {
         url.searchParams.delete('q');
         url.searchParams.delete('id');
         url.searchParams.delete('view');
-        window.history.pushState({}, '', url);
+        if (updateHistory) window.history.pushState({}, '', url);
         document.title = 'Pflix - Find where to stream any movie or TV show';
         return;
     }
@@ -65,7 +50,7 @@ async function search(query) {
     url.searchParams.set('q', query);
     url.searchParams.delete('id');
     url.searchParams.delete('view');
-    window.history.pushState({ query }, '', url);
+    if (updateHistory) window.history.pushState({ query }, '', url);
     document.title = `Search: ${query} - Pflix`;
     
     document.getElementById('results-spinner').style.display = 'flex';
@@ -126,13 +111,10 @@ function setViewMode(mode) {
         const gridBtn = document.getElementById(gridBtnId);
         const listBtn = document.getElementById(listBtnId);
         if (gridBtn && listBtn) {
-            if (isGrid) {
-                gridBtn.className = 'p-1.5 rounded-lg text-white bg-red-600 shadow transition-all cursor-pointer';
-                listBtn.className = 'p-1.5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer';
-            } else {
-                gridBtn.className = 'p-1.5 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer';
-                listBtn.className = 'p-1.5 rounded-lg text-white bg-red-600 shadow transition-all cursor-pointer';
-            }
+            gridBtn.classList.toggle('is-active', isGrid);
+            listBtn.classList.toggle('is-active', !isGrid);
+            gridBtn.setAttribute('aria-pressed', String(isGrid));
+            listBtn.setAttribute('aria-pressed', String(!isGrid));
         }
     };
 
@@ -162,8 +144,9 @@ function createMediaCard(item, onClick) {
     const typeLabel = isTv ? 'TV' : 'Movie';
     const cleanTitle = titleName.replace(/"/g, '&quot;');
 
-    const card = document.createElement('div');
-    card.tabIndex = 0;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.setAttribute('aria-label', `View ${titleName}`);
 
     if (isList) {
         card.className = 'media-list-item';
@@ -214,13 +197,7 @@ function createMediaCard(item, onClick) {
             </div>
             <div class="media-card-meta">
                 <div class="media-card-title" title="${cleanTitle}">${titleName}</div>
-                <div class="media-card-sub">
-                    <span>${year || typeLabel}</span>
-                    <span class="media-card-watch">
-                        <span>Watch</span>
-                        <svg style="width:10px;height:10px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </span>
-                </div>
+                <div class="media-card-sub"><span>${year || typeLabel}</span></div>
             </div>
         `;
     }
@@ -288,7 +265,7 @@ function renderSearchResults(titles, query = '') {
  * @param {string} imdbId - The IMDb ID of the title.
  * @param {boolean} [play=false] - Whether to show the player view.
  */
-function navigateTo(imdbId, play = false) {
+function navigateTo(imdbId, play = false, replace = false) {
     const url = new URL(window.location);
     url.searchParams.set('id', imdbId);
     if (play) {
@@ -298,7 +275,9 @@ function navigateTo(imdbId, play = false) {
     }
 
     if (window.location.href !== url.href) {
-        window.history.pushState({ imdbId, play }, '', url);
+        const state = { imdbId, play };
+        if (replace) window.history.replaceState(state, '', url);
+        else window.history.pushState(state, '', url);
     }
 
     if (play) {
@@ -516,7 +495,7 @@ function renderDetailsPage(data) {
     url.searchParams.set('id', data.id);
     url.searchParams.delete('view');
     url.searchParams.delete('q');
-    window.history.pushState({ imdbId: data.id }, '', url);
+    window.history.replaceState({ imdbId: data.id }, '', url);
     document.title = `${data.primaryTitle}${data.startYear ? ` (${data.startYear})` : ''} - Pflix`;
 
     const ratingsHTML = data.rating ? `
@@ -531,47 +510,42 @@ function renderDetailsPage(data) {
     const poster = data.primaryImage?.url || data.image || '';
 
     App.elements.watchPageContainer.innerHTML = `
-        <div class="relative w-full flex-1 flex flex-col items-center justify-center overflow-hidden py-4 sm:py-8 px-3 sm:px-8">
+        <div class="details-view">
             <div class="absolute inset-0 overflow-hidden pointer-events-none">
                 <div class="w-full h-full bg-cover bg-center blur-3xl scale-110 opacity-20" style="background-image: url(${poster})"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/90 to-gray-900/70"></div>
             </div>
 
-            <!-- Top Nav for Details Page -->
-            <header class="relative z-10 w-full max-w-5xl flex items-center justify-between gap-2 py-2 px-1 mb-4 border-b border-white/10">
-                <button id="details-top-back-btn" title="Go back" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-200 hover:text-white bg-gray-800/90 hover:bg-gray-700/90 border border-white/10 px-3 py-1.5 rounded-lg transition-all cursor-pointer active:scale-95 shadow-sm">
+            <header class="details-header">
+                <button id="details-top-back-btn" title="Back to results" class="nav-button">
                     <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                     <span>Back</span>
                 </button>
-                <button id="details-top-home-btn" title="Go to Homepage" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-200 hover:text-white bg-gray-800/90 hover:bg-gray-700/90 border border-white/10 px-3 py-1.5 rounded-lg transition-all cursor-pointer active:scale-95 shadow-sm">
+                <button id="details-home-btn" title="Go home" class="nav-button">
                     <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                     <span>Home</span>
                 </button>
             </header>
 
-            <div class="relative z-10 flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-10 md:gap-16 max-w-5xl w-full my-auto">
-                <div class="flex-shrink-0 w-44 sm:w-56 md:w-72 shadow-2xl rounded-2xl overflow-hidden border border-white/10 bg-gray-800 ring-1 ring-white/5 relative aspect-[2/3] flex items-center justify-center">
+            <div class="details-layout">
+                <div class="details-poster">
                     <img src="${poster || 'assets/images/pflix.png'}" alt="${data.primaryTitle}" 
                         onerror="if (!this.dataset.fallback) { this.dataset.fallback = '1'; this.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(this.src); } else { this.src = 'assets/images/pflix.png'; }"
                         class="w-full h-full object-cover block" />
                 </div>
-                <div class="flex-1 max-w-xl text-center md:text-left flex flex-col items-center md:items-start">
-                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2 text-xs">
+                <div class="details-copy">
+                    <div class="details-meta">
                         <span class="bg-red-600/90 text-white font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">${data.type || 'Movie'}</span>
                         ${data.startYear ? `<span class="text-gray-300 bg-white/10 px-2 py-0.5 rounded-full">${data.startYear}${data.endYear ? ` - ${data.endYear}` : ''}</span>` : ''}
                         ${data.runtime ? `<span class="text-gray-400">• ${data.runtime}</span>` : (data.runtimeSeconds ? `<span class="text-gray-400">• ${Math.floor(data.runtimeSeconds / 60)}m</span>` : '')}
                     </div>
-                    <h1 class="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight mb-3 leading-tight">${data.primaryTitle}</h1>
-                    <p class="text-sm sm:text-base text-gray-300 leading-relaxed mb-4 line-clamp-4 md:line-clamp-none">${data.plot || 'No plot available.'}</p>
+                    <h1 class="details-title">${data.primaryTitle}</h1>
+                    <p class="details-plot">${data.plot || 'No plot available.'}</p>
                     ${ratingsHTML ? `<div class="mb-5">${ratingsHTML}</div>` : ''}
-                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-1">
-                        <button id="play-button" type="button" class="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-3 px-8 rounded-full text-base shadow-xl shadow-red-600/30 transition-all hover:scale-105 active:scale-95 cursor-pointer">
+                    <div class="details-actions">
+                        <button id="play-button" type="button" class="button button-primary play-button">
                             <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                             <span>Play Now</span>
-                        </button>
-                        <button id="details-back-btn" type="button" class="inline-flex items-center gap-1.5 bg-gray-800/90 hover:bg-gray-700 text-gray-200 font-medium py-3 px-6 rounded-full text-sm border border-white/10 transition-colors cursor-pointer active:scale-95">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                            <span>Back</span>
                         </button>
                     </div>
                 </div>
@@ -587,21 +561,12 @@ function renderDetailsPage(data) {
         }
     });
 
-    document.getElementById('details-top-home-btn')?.addEventListener('click', () => {
-        showHomeView();
-    });
+    document.getElementById('details-home-btn')?.addEventListener('click', navigateHome);
 
     document.getElementById('play-button').addEventListener('click', () => {
         navigateTo(data.id, true);
     });
 
-    document.getElementById('details-back-btn')?.addEventListener('click', () => {
-        if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            showHomeView();
-        }
-    });
 }
 
 /**
@@ -612,33 +577,28 @@ function renderPlayerPage(data) {
     url.searchParams.set('id', data.id);
     url.searchParams.set('view', 'player');
     url.searchParams.delete('q');
-    window.history.pushState({ imdbId: data.id, play: true }, '', url);
+    window.history.replaceState({ imdbId: data.id, play: true }, '', url);
     document.title = `${data.primaryTitle} - Now Playing - Pflix`;
     
     App.elements.watchPageContainer.innerHTML = `
-        <div class="w-full max-w-7xl mx-auto px-2 py-2 sm:p-4 md:p-6 flex flex-col gap-3 sm:gap-4">
-            <!-- Sleek Integrated Player Header -->
-            <header class="w-full flex items-center justify-between gap-2 py-2 px-1 border-b border-white/10">
-                <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                    <button id="player-back-btn" title="Back to Details" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-200 hover:text-white bg-gray-800/90 hover:bg-gray-700/90 border border-white/10 px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer flex-shrink-0 active:scale-95 shadow-sm">
+        <div class="player-view">
+            <header class="player-header">
+                <div class="player-heading">
+                    <button id="player-back-btn" title="Back to details" class="nav-button">
                         <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                         <span>Details</span>
                     </button>
-                    <div class="flex items-center gap-2 min-w-0 truncate">
-                        <h1 class="text-sm sm:text-base md:text-lg font-bold text-white truncate">${data.primaryTitle}</h1>
+                    <div class="player-title-wrap">
+                        <h1 class="player-title">${data.primaryTitle}</h1>
                         ${data.startYear ? `<span class="text-xs text-gray-400 hidden sm:inline flex-shrink-0">(${data.startYear})</span>` : ''}
                     </div>
                 </div>
-                <button id="player-home-btn" title="Go to Homepage" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-gray-200 hover:text-white bg-gray-800/90 hover:bg-gray-700/90 border border-white/10 px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer flex-shrink-0 active:scale-95 shadow-sm">
-                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    <span>Home</span>
-                </button>
             </header>
 
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div class="player-layout">
                 <!-- Video & Notices column -->
-                <div class="lg:col-span-3 flex flex-col">
-                    <div id="stream-player-section" class="w-full bg-black rounded-xl sm:rounded-2xl overflow-hidden relative aspect-video shadow-2xl border border-white/10 ring-1 ring-white/5">
+                <div class="player-main">
+                    <div id="stream-player-section" class="stream-player">
                         <!-- Player iframe will be loaded here -->
                     </div>
                     <div class="flex flex-col xs:flex-row items-center justify-between gap-2.5 mt-3 pt-3 border-t border-white/5 text-xs">
@@ -654,7 +614,7 @@ function renderPlayerPage(data) {
                 </div>
 
                 <!-- Aside: Episodes & Servers -->
-                <aside class="lg:col-span-1 bg-gray-800/80 backdrop-blur border border-white/10 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-xl flex flex-col gap-3.5">
+                <aside class="player-sidebar">
                     <div id="episode-selector-container"></div>
                     <div class="flex items-center justify-between pb-2 border-b border-gray-700/60">
                         <h2 class="text-sm sm:text-base font-bold flex items-center gap-2 text-white">
@@ -672,11 +632,7 @@ function renderPlayerPage(data) {
         </div>`;
 
     document.getElementById('player-back-btn')?.addEventListener('click', () => {
-        navigateTo(data.id, false);
-    });
-
-    document.getElementById('player-home-btn')?.addEventListener('click', () => {
-        showHomeView();
+        navigateTo(data.id, false, true);
     });
 
     document.getElementById('recheck-health-btn')?.addEventListener('click', () => {
@@ -1285,8 +1241,16 @@ function init() {
         const urlParams = new URLSearchParams(window.location.search);
         const imdbId = urlParams.get('id');
         const play = urlParams.get('view') === 'player';
+        const query = urlParams.get('q');
+        const page = urlParams.get('page');
         if (imdbId) {
             navigateTo(imdbId, play);
+        } else if (query) {
+            App.elements.searchInput.value = query;
+            search(query, false);
+        } else if (page === 'explore') {
+            showSection('explore');
+            loadFeatured();
         } else {
             showSection('search');
         }
@@ -1303,7 +1267,7 @@ function init() {
         navigateTo(imdbId, play);
     } else if (query) {
         App.elements.searchInput.value = query;
-        search(query);
+        search(query, false);
     } else if (page === 'explore') {
         showSection('explore');
         loadFeatured();
@@ -1356,10 +1320,7 @@ const navigateHome = () => {
 };
 
 document.getElementById('explore-home-btn')?.addEventListener('click', navigateHome);
-document.getElementById('explore-back-btn')?.addEventListener('click', navigateHome);
 document.getElementById('results-home-btn')?.addEventListener('click', navigateHome);
-document.getElementById('results-back-btn')?.addEventListener('click', navigateHome);
-document.getElementById('details-home-btn')?.addEventListener('click', navigateHome);
 
 // View switcher button listeners
 document.getElementById('results-view-grid-btn')?.addEventListener('click', () => setViewMode('grid'));
@@ -1411,8 +1372,6 @@ function showSection(section) {
             footer.classList.remove('hidden');
         }
     }
-    // Update the global home button visibility after any section change
-    updateGlobalHomeBtn();
 }
 
 // Show correct section on navigation
