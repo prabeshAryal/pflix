@@ -498,6 +498,27 @@ async function fetchMediaData(imdbId, playOnLoad, requestToken) {
  * Renders the details page, showing info and a play button.
  */
 function renderDetailsPage(data) {
+    const poster = data.primaryImage?.url || data.image || '';
+    if (!poster || data.posterReady) {
+        renderDetailsPageContent(data);
+        return;
+    }
+
+    const posterImage = new Image();
+    posterImage.onload = () => {
+        if (new URLSearchParams(window.location.search).get('id') !== data.id) return;
+        data.posterReady = true;
+        renderDetailsPageContent(data);
+    };
+    posterImage.onerror = () => {
+        if (new URLSearchParams(window.location.search).get('id') !== data.id) return;
+        data.posterReady = true;
+        renderDetailsPageContent(data);
+    };
+    posterImage.src = poster;
+}
+
+function renderDetailsPageContent(data) {
     const url = new URL(window.location);
     url.searchParams.set('id', data.id);
     url.searchParams.delete('view');
@@ -535,10 +556,11 @@ function renderDetailsPage(data) {
             </header>
 
             <div class="details-layout">
-                <div class="details-poster">
-                    <img src="${poster || 'assets/images/pflix.png'}" alt="${data.primaryTitle}" 
+                <div class="details-poster is-loading">
+                    <img src="${poster || 'assets/images/pflix.png'}" alt="${data.primaryTitle}"
+                        onload="this.parentElement.classList.remove('is-loading'); this.classList.add('is-loaded');"
                         onerror="if (!this.dataset.fallback) { this.dataset.fallback = '1'; this.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(this.src); } else { this.src = 'assets/images/pflix.png'; }"
-                        class="w-full h-full object-cover block" />
+                        class="details-poster-image w-full h-full object-cover block" />
                 </div>
                 <div class="details-copy">
                     <div class="details-meta">
@@ -1453,8 +1475,25 @@ function showContentView(view = 'details') {
                 </div>
             </div>
         ` : `
-            <div class="details-loading" role="status" aria-label="Loading title details">
-                <div class="details-loading-spinner"></div>
+            <div class="details-skeleton" role="status" aria-label="Loading title details">
+                <div class="details-skeleton-header">
+                    <div class="skeleton-block details-skeleton-back"></div>
+                    <div class="skeleton-block details-skeleton-heading"></div>
+                </div>
+                <div class="details-skeleton-layout">
+                    <div class="skeleton-block details-skeleton-poster"></div>
+                    <div class="details-skeleton-copy">
+                        <div class="details-skeleton-meta">
+                            <div class="skeleton-block details-skeleton-pill"></div>
+                            <div class="skeleton-block details-skeleton-pill details-skeleton-pill-short"></div>
+                        </div>
+                        <div class="skeleton-block details-skeleton-title"></div>
+                        <div class="skeleton-block details-skeleton-line details-skeleton-line-wide"></div>
+                        <div class="skeleton-block details-skeleton-line"></div>
+                        <div class="skeleton-block details-skeleton-line details-skeleton-line-short"></div>
+                        <div class="skeleton-block details-skeleton-action"></div>
+                    </div>
+                </div>
             </div>
         `;
     }

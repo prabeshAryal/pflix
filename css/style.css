@@ -1001,6 +1001,7 @@ select:focus-visible,
 }
 
 .details-poster {
+    position: relative;
     width: 100%;
     aspect-ratio: 2 / 3;
     overflow: hidden;
@@ -1008,6 +1009,45 @@ select:focus-visible,
     border-radius: var(--radius-lg);
     background: var(--color-surface);
     box-shadow: 0 30px 70px rgba(0, 0, 0, 0.46);
+}
+
+.details-poster-image {
+    opacity: 0;
+    transition: opacity 180ms ease;
+}
+
+.details-poster-image.is-loaded {
+    opacity: 1;
+}
+
+.details-poster.is-loading::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 3px solid rgba(255, 255, 255, 0.16);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    content: "";
+    transform: translate(-50%, -50%);
+    animation: details-poster-spin 0.8s linear infinite;
+}
+
+.details-poster.is-loading::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.08) 45%, transparent 70%);
+    content: "";
+    transform: translateX(-100%);
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes details-poster-spin {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
 }
 
 .details-copy {
