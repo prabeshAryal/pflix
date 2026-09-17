@@ -616,7 +616,15 @@ function renderDetailsPageContent(data) {
 /**
  * Renders the player page with video, servers, and episode selectors.
  */
-function renderPlayerPage(data) {
+function renderPlayerPage(data, seriesDataReady = false) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const preferredServer = urlParams.get('server');
+
+    if (App.currentMedia.isTv && !seriesDataReady && Object.keys(App.currentMedia.seasons).length === 0) {
+        fetchEpisodes(preferredServer, true);
+        return;
+    }
+
     const url = new URL(window.location);
     url.searchParams.set('id', data.id);
     url.searchParams.set('view', 'player');
@@ -711,9 +719,6 @@ function renderPlayerPage(data) {
         runServerHealthChecks();
     });
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const preferredServer = urlParams.get('server');
-
     if (App.currentMedia.isTv) {
         if (Object.keys(App.currentMedia.seasons).length > 0) {
             renderEpisodeSelectors();
@@ -724,7 +729,7 @@ function renderPlayerPage(data) {
             if (defaultProviderId) showStream(defaultProviderId, App.currentMedia);
             runServerHealthChecks();
         } else {
-            fetchEpisodes(preferredServer);
+            fetchEpisodes(preferredServer, true);
         }
     } else {
         renderServerButtons(preferredServer);
@@ -812,7 +817,7 @@ function generateDefaultEpisodes(seasonNum, count = 24) {
 /**
  * Fetches and processes episode data for a series.
  */
-async function fetchEpisodes(preferredServer = null) {
+async function fetchEpisodes(preferredServer = null, renderAfterLoad = false) {
     try {
         let seasonsObj = {};
         const details = App.currentMedia.details || {};
@@ -873,6 +878,11 @@ async function fetchEpisodes(preferredServer = null) {
         App.currentMedia.seasons = seasonsObj;
         Object.values(App.currentMedia.seasons).forEach(s => s.sort((a,b) => a.episodeNumber - b.episodeNumber));
 
+        if (renderAfterLoad) {
+            renderPlayerPage(App.currentMedia.details, true);
+            return;
+        }
+
         renderEpisodeSelectors();
         renderServerButtons(preferredServer);
         const defaultProviderId = (preferredServer && STREAMING_PROVIDERS[preferredServer]?.supports.includes('tv'))
@@ -884,6 +894,10 @@ async function fetchEpisodes(preferredServer = null) {
     } catch (error) {
         console.error("Error fetching episodes:", error);
         App.currentMedia.seasons = { '1': generateDefaultEpisodes(1, 24) };
+        if (renderAfterLoad) {
+            renderPlayerPage(App.currentMedia.details, true);
+            return;
+        }
         renderEpisodeSelectors();
         renderServerButtons(preferredServer);
         const defaultProviderId = Object.keys(STREAMING_PROVIDERS).find(id => STREAMING_PROVIDERS[id].supports.includes('tv'));
