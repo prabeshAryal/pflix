@@ -28,6 +28,21 @@ const App = {
     ],
 };
 
+function getSavedEpisode(mediaId) {
+    try {
+        const saved = JSON.parse(localStorage.getItem(`pflix_episode_${mediaId}`) || 'null');
+        return saved && Number(saved.season) > 0 && Number(saved.episode) > 0 ? saved : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function saveEpisode(mediaId, season, episode) {
+    try {
+        localStorage.setItem(`pflix_episode_${mediaId}`, JSON.stringify({ season, episode }));
+    } catch (_) {}
+}
+
 /**
  * Performs a search query to the API.
  */
@@ -922,8 +937,9 @@ function renderEpisodeSelectors() {
     if (seasonNumbers.length === 0) return;
 
     const urlParams = new URLSearchParams(window.location.search);
-    const initialSeason = urlParams.get('season') || urlParams.get('s') || seasonNumbers[0];
-    const initialEpisode = Number(urlParams.get('episode') || urlParams.get('e') || 1);
+    const savedEpisode = getSavedEpisode(App.currentMedia.id);
+    const initialSeason = urlParams.get('season') || urlParams.get('s') || savedEpisode?.season || seasonNumbers[0];
+    const initialEpisode = Number(urlParams.get('episode') || urlParams.get('e') || savedEpisode?.episode || 1);
 
     container.innerHTML = `
         <div class="space-y-3 mb-2 pb-3 border-b border-gray-700/60">
@@ -999,6 +1015,7 @@ function renderEpisodeSelectors() {
         }
 
         updateNavButtons();
+        saveEpisode(App.currentMedia.id, seasonSelect.value, episodeSelect.value);
         updateStreamSource();
     };
 
@@ -1042,6 +1059,7 @@ function renderEpisodeSelectors() {
     seasonSelect.addEventListener('change', () => updateEpisodes(1));
     episodeSelect.addEventListener('change', () => {
         updateNavButtons();
+        saveEpisode(App.currentMedia.id, seasonSelect.value, episodeSelect.value);
         updateStreamSource();
     });
 
@@ -1195,7 +1213,7 @@ function showStream(streamId, media) {
     let url;
     if (type === 'movie') {
         url = provider.url(media.id);
-        playerSection.innerHTML = `<iframe src="${url}" title="Pflix Player" allowfullscreen class="w-full h-full" referrerpolicy="${provider.referrerPolicy || 'no-referrer'}"></iframe>`;
+        playerSection.innerHTML = createPlayerEmbed(url, provider.referrerPolicy);
         window.history.replaceState(window.history.state, '', urlObj);
     } else {
         const seasonSelect = document.getElementById('season-select');
@@ -1216,8 +1234,24 @@ function showStream(streamId, media) {
             return;
         }
         url = provider.url(media.id, season, episode, true);
-        playerSection.innerHTML = `<iframe src="${url}" title="Pflix Player" allowfullscreen class="w-full h-full" referrerpolicy="${provider.referrerPolicy || 'no-referrer'}"></iframe>`;
+        saveEpisode(media.id, season, episode);
+        playerSection.innerHTML = createPlayerEmbed(url, provider.referrerPolicy);
     }
+}
+
+function createPlayerEmbed(url, referrerPolicy) {
+    return `
+        <div class="player-embed-loading">
+            <div class="player-wireframe" aria-hidden="true">
+                <div class="player-wireframe-icon skeleton-block"></div>
+                <div class="player-wireframe-message">
+                    <div class="skeleton-block player-wireframe-line"></div>
+                    <div class="skeleton-block player-wireframe-line player-wireframe-line-short"></div>
+                </div>
+            </div>
+            <iframe src="${url}" title="Pflix Player" allowfullscreen class="player-embed-frame" referrerpolicy="${referrerPolicy || 'no-referrer'}" onload="this.parentElement.classList.add('is-ready')"></iframe>
+        </div>
+    `;
 }
 
 function renderError(message) {

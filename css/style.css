@@ -1148,6 +1148,30 @@ select:focus-visible,
     background: #05070b;
 }
 
+.player-embed-loading {
+    position: absolute;
+    inset: 0;
+}
+
+.player-embed-frame {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    opacity: 0;
+    transition: opacity 180ms ease;
+}
+
+.player-embed-loading.is-ready .player-embed-frame {
+    opacity: 1;
+}
+
+.player-embed-loading.is-ready .player-wireframe {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .player-wireframe-icon {
     position: absolute;
     top: 1.5rem;
